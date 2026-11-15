@@ -12,3 +12,4 @@ build/
 # Them boi The Yub (khong day bi mat / file tam len GitHub)
 .env.local
 npm-debug.log*
+.data/

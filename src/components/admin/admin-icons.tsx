@@ -106,3 +106,9 @@ export const ArrowRightIcon = ({ size = 20, ...p }: P) => (
 export const ShieldIcon = ({ size = 20, ...p }: P) => (
   <svg {...base(size)} {...p}><path d="M12 3.5 5 6v5.5c0 4.3 3 7.6 7 9 4-1.4 7-4.7 7-9V6z" /><path d="m9 12 2.2 2.2L15.5 10" /></svg>
 );
+export const TagIcon = ({ size = 20, ...p }: P) => (
+  <svg {...base(size)} {...p}><path d="M3.5 12.2V4.5a1 1 0 0 1 1-1h7.7a1 1 0 0 1 .7.3l8 8a1 1 0 0 1 0 1.4l-7.7 7.7a1 1 0 0 1-1.4 0l-8-8a1 1 0 0 1-.3-.7z" /><circle cx="8.2" cy="8.2" r="1.4" /></svg>
+);
+export const PencilIcon = ({ size = 20, ...p }: P) => (
+  <svg {...base(size)} {...p}><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z" /><path d="m13.5 6.5 4 4" /></svg>
+);

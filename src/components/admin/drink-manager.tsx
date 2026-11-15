@@ -2,7 +2,8 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { saveDrinkAction } from "@/modules/admin/actions";
-import { drinkGroupLabels, drinkGroups, type Drink, type DrinkGroup } from "@/modules/products/types";
+import { categoryName, type Category } from "@/modules/categories/types";
+import type { Drink, DrinkGroup } from "@/modules/products/types";
 import { PlusIcon } from "./admin-icons";
 import { DeleteButton } from "./delete-button";
 import { Switch } from "./switch";
@@ -89,7 +90,7 @@ function PriceInputs({ d, set }: { d: Draft; set: (p: Partial<Draft>) => void })
   );
 }
 
-function DrinkRow({ drink, canDelete }: { drink: Drink; canDelete: boolean }) {
+function DrinkRow({ drink, canDelete, groups }: { drink: Drink; canDelete: boolean; groups: Category[] }) {
   const saved = useMemo(() => toDraft(drink), [drink]);
   const [d, setD] = useState<Draft>(saved);
   const [open, setOpen] = useState(false);
@@ -136,7 +137,7 @@ function DrinkRow({ drink, canDelete }: { drink: Drink; canDelete: boolean }) {
           <label className={label}>
             Nhóm
             <select value={d.group} onChange={(e) => set({ group: e.target.value as DrinkGroup })} className={input}>
-              {drinkGroups.map((g) => <option key={g} value={g}>{drinkGroupLabels[g]}</option>)}
+              {groups.map((g) => <option key={g.slug} value={g.slug}>{g.name}</option>)}
             </select>
           </label>
           <label className={`${label} md:col-span-2`}>
@@ -169,10 +170,10 @@ function DrinkRow({ drink, canDelete }: { drink: Drink; canDelete: boolean }) {
   );
 }
 
-const EMPTY: Draft = { id: null, name: "", description: "", group: "coffee", temps: ["ice"], priceMVnd: 0, priceLVnd: null, isActive: true, soldOut: false };
+const EMPTY: Draft = { id: null, name: "", description: "", group: "", temps: ["ice"], priceMVnd: 0, priceLVnd: null, isActive: true, soldOut: false };
 
-function NewDrink({ onDone }: { onDone: () => void }) {
-  const [d, setD] = useState<Draft>(EMPTY);
+function NewDrink({ onDone, groups }: { onDone: () => void; groups: Category[] }) {
+  const [d, setD] = useState<Draft>({ ...EMPTY, group: groups[0]?.slug ?? "" });
   const { pending, save } = useSave();
   const set = (p: Partial<Draft>) => setD((x) => ({ ...x, ...p }));
   return (
@@ -180,7 +181,7 @@ function NewDrink({ onDone }: { onDone: () => void }) {
       onSubmit={(e) => {
         e.preventDefault();
         save(d, `Đã thêm ${d.name}`, () => {
-          setD(EMPTY);
+          setD({ ...EMPTY, group: groups[0]?.slug ?? "" });
           onDone();
         });
       }}
@@ -194,7 +195,7 @@ function NewDrink({ onDone }: { onDone: () => void }) {
       <label className={label}>
         Nhóm
         <select value={d.group} onChange={(e) => set({ group: e.target.value as DrinkGroup })} className={input}>
-          {drinkGroups.map((g) => <option key={g} value={g}>{drinkGroupLabels[g]}</option>)}
+          {groups.map((g) => <option key={g.slug} value={g.slug}>{g.name}</option>)}
         </select>
       </label>
       <label className={`${label} md:col-span-2`}>
@@ -215,7 +216,7 @@ function NewDrink({ onDone }: { onDone: () => void }) {
 }
 
 /** Quan ly do uong: gia M/L, con/het, an/hien – web cap nhat ngay sau khi luu */
-export function DrinkManager({ drinks, canDelete = false }: { drinks: Drink[]; canDelete?: boolean }) {
+export function DrinkManager({ drinks, groups, canDelete = false }: { drinks: Drink[]; groups: Category[]; canDelete?: boolean }) {
   const [group, setGroup] = useState<DrinkGroup | "all">("all");
   const [adding, setAdding] = useState(false);
   const visible = drinks.filter((d) => group === "all" || d.group === group);
@@ -224,9 +225,9 @@ export function DrinkManager({ drinks, canDelete = false }: { drinks: Drink[]; c
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="no-scrollbar -mx-4 flex gap-1.5 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-          {(["all", ...drinkGroups] as const).map((g) => (
+          {["all", ...groups.map((x) => x.slug)].map((g) => (
             <button key={g} type="button" onClick={() => setGroup(g)} aria-pressed={group === g} className={`min-h-10 flex-none rounded-full border-0 px-3.5 text-[14px] font-semibold ${group === g ? "bg-dark text-cream" : "bg-transparent text-muted hover:bg-maroon/5"}`}>
-              {g === "all" ? "Tất cả" : drinkGroupLabels[g]}
+              {g === "all" ? "Tất cả" : categoryName(groups, g)}
             </button>
           ))}
         </div>
@@ -236,10 +237,10 @@ export function DrinkManager({ drinks, canDelete = false }: { drinks: Drink[]; c
           </button>
         )}
       </div>
-      {adding && <NewDrink onDone={() => setAdding(false)} />}
+      {adding && <NewDrink groups={groups} onDone={() => setAdding(false)} />}
       <ul className="m-0 flex list-none flex-col gap-2.5 p-0">
         {visible.map((d) => (
-          <DrinkRow key={`${d.id}-${d.priceMVnd}-${d.priceLVnd}-${d.soldOut}-${d.isActive}-${d.name}`} drink={d} canDelete={canDelete} />
+          <DrinkRow key={`${d.id}-${d.priceMVnd}-${d.priceLVnd}-${d.soldOut}-${d.isActive}-${d.name}`} drink={d} canDelete={canDelete} groups={groups} />
         ))}
       </ul>
       <p className="m-0 text-[13px] text-muted">Giá hiện trên thực đơn trang Đồ uống. Đồ uống “Hết” vẫn hiện nhưng mờ đi; “Ẩn” thì không hiện trên web.</p>

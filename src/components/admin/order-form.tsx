@@ -6,11 +6,11 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import { addDays, relativeDateLabel, shortDateLabel, todayVN } from "@/lib/dates";
 import { formatVnd } from "@/lib/format";
-import { productImages } from "@/lib/images";
 import { DEFAULT_SLOT_ID, pickupSlots } from "@/lib/pickup";
 import { createOrderAdminAction, editOrderAction } from "@/modules/admin/actions";
 import { unitPriceOf } from "@/modules/products/pricing";
-import { categoryLabels, productCategories, type Product, type ProductCategory } from "@/modules/products/types";
+import { categoryName, type Category } from "@/modules/categories/types";
+import type { Product, ProductCategory } from "@/modules/products/types";
 import { MinusIcon, PlusIcon } from "@/components/ui/icons";
 import { SearchIcon, TrashIcon } from "./admin-icons";
 import { toast } from "./toast";
@@ -40,7 +40,7 @@ export interface OrderFormInitial {
 const lineKey = (productId: string, variantId?: string) => `${productId}::${variantId ?? ""}`;
 
 /** Tao don ho khach (goi dien / inbox) hoac sua don – gia luon do may chu tinh lai */
-export function OrderForm({ products, initial }: { products: Product[]; initial?: OrderFormInitial }) {
+export function OrderForm({ products, categories, initial }: { products: Product[]; categories: Category[]; initial?: OrderFormInitial }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -161,9 +161,9 @@ export function OrderForm({ products, initial }: { products: Product[]; initial?
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Tìm món…" aria-label="Tìm món" className={`${input} pl-10`} />
           </div>
           <div className="no-scrollbar -mx-1 flex gap-1.5 overflow-x-auto px-1">
-            {(["all", ...productCategories] as const).map((c) => (
+            {["all", ...categories.filter((x) => products.some((p) => p.category === x.slug)).map((x) => x.slug)].map((c) => (
               <button key={c} type="button" onClick={() => setCat(c)} aria-pressed={cat === c} className={`min-h-9 flex-none rounded-full border-0 px-3 text-[13px] font-semibold ${cat === c ? "bg-dark text-cream" : "bg-beige/70 text-muted"}`}>
-                {c === "all" ? "Tất cả" : categoryLabels[c]}
+                {c === "all" ? "Tất cả" : categoryName(categories, c)}
               </button>
             ))}
           </div>
@@ -175,7 +175,7 @@ export function OrderForm({ products, initial }: { products: Product[]; initial?
               return (
                 <li key={p.id} className={`flex items-center gap-2.5 rounded-[16px] border border-maroon/8 p-2 ${out ? "opacity-50" : ""}`}>
                   <span className="relative h-11 w-11 flex-none overflow-hidden rounded-xl bg-beige">
-                    <Image src={productImages[p.image]} alt="" fill sizes="44px" className="object-cover" style={{ objectPosition: p.imagePosition ?? "center" }} />
+                    <Image src={p.cover} alt="" fill sizes="44px" className="object-cover" style={{ objectPosition: p.imagePosition ?? "center" }} />
                   </span>
                   <span className="flex min-w-0 flex-1 flex-col">
                     <span className="truncate text-[14px] font-semibold">{p.name}</span>

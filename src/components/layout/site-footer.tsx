@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { brandImages } from "@/lib/images";
-import { storeConfig } from "@/lib/store-config";
+import { getStoreInfo } from "@/modules/settings/store-info-server";
 import { settingsRepository } from "@/modules/settings/repository";
 import { ADDRESS_PLACEHOLDER } from "@/modules/settings/types";
 import { TornWave } from "../ui/torn-wave";
@@ -9,6 +9,7 @@ import { TornWave } from "../ui/torn-wave";
 const headingCls = "mb-1.5 text-xs font-bold uppercase tracking-[0.2em] text-accent";
 
 export async function SiteFooter({ variant = "full" }: { variant?: "full" | "compact" }) {
+  const store = await getStoreInfo();
   const address = (await settingsRepository.get()).address ?? ADDRESS_PLACEHOLDER;
   if (variant === "compact") {
     return (
@@ -18,10 +19,10 @@ export async function SiteFooter({ variant = "full" }: { variant?: "full" | "com
             <Image src={brandImages.logoMaroon} alt="The Yub – Bakes & More" width={brandImages.logoWidth} height={brandImages.logoHeight} className="h-[60px] w-auto" />
           </Link>
           <span className="text-muted">
-            {address} · Mở cửa {storeConfig.openHours} · Gọi trước khi đến:{" "}
-            <a href={storeConfig.phoneHref} className="font-semibold text-maroon">{storeConfig.phone}</a>
+            {address} · Mở cửa {store.openHours} · Gọi trước khi đến:{" "}
+            <a href={store.phoneHref} className="font-semibold text-maroon">{store.phone}</a>
           </span>
-          <span className="text-[13px] text-muted">© 2026 {storeConfig.name}</span>
+          <span className="text-[13px] text-muted">© 2026 {store.name}</span>
         </div>
       </footer>
     );
@@ -38,8 +39,8 @@ export async function SiteFooter({ variant = "full" }: { variant?: "full" | "com
         <div className="flex flex-col gap-1 border-t border-maroon/15 pt-[18px]">
           <h2 className="m-0 mb-1 font-display text-2xl font-semibold">Ghé tiệm</h2>
           <span className="text-muted-2">{address}</span>
-          <span className="text-muted-2">Mở cửa {storeConfig.openHours} · Ra lò {storeConfig.freshBatchTime}</span>
-          <a href={storeConfig.phoneHref} className="inline-flex min-h-11 items-center font-semibold">Gọi trước khi đến: {storeConfig.phone}</a>
+          <span className="text-muted-2">Mở cửa {store.openHours} · Ra lò {store.freshBatchTime}</span>
+          <a href={store.phoneHref} className="inline-flex min-h-11 items-center font-semibold">Gọi trước khi đến: {store.phone}</a>
         </div>
         <nav aria-label="Liên kết chân trang" className="grid grid-cols-2 gap-x-4 gap-y-1">
           <Link href="/thuc-don" className="flex min-h-10 items-center no-underline">Bánh</Link>
@@ -52,20 +53,20 @@ export async function SiteFooter({ variant = "full" }: { variant?: "full" | "com
             <span key={n} className="inline-flex min-h-11 items-center rounded-full border border-maroon/25 px-4 text-sm">{n}</span>
           ))}
         </div>
-        <span className="border-t border-maroon/15 pt-3.5 text-xs text-muted-2">© 2026 {storeConfig.name}</span>
+        <span className="border-t border-maroon/15 pt-3.5 text-xs text-muted-2">© 2026 {store.name}</span>
       </div>
       <div className="mx-auto hidden max-w-[1200px] flex-col gap-12 px-6 pb-8 pt-[72px] md:flex">
         <div className="flex flex-wrap justify-between gap-10">
           <div className="flex min-w-0 flex-[1_1_280px] flex-col gap-3.5">
             <Image src={brandImages.logoMaroon} alt="The Yub – Bakes & More" width={brandImages.logoWidth} height={brandImages.logoHeight} className="h-[72px] w-auto self-start" />
-            <span className="font-display text-xl text-accent">{storeConfig.slogan}.</span>
+            <span className="font-display text-xl text-accent">{store.slogan}.</span>
             <span className="max-w-[300px] text-muted-2">Tiệm bánh &amp; quầy nước — bánh ra lò mỗi chiều, cà phê pha khi bạn tới.</span>
           </div>
           <div className="flex flex-[0_1_260px] flex-col gap-2">
             <h3 className={headingCls}>Ghé tiệm</h3>
             <span className="text-muted-2">{address}</span>
-            <span className="text-muted-2">Mở cửa {storeConfig.openHours} · Ra lò {storeConfig.freshBatchTime}</span>
-            <a href={storeConfig.phoneHref} className="font-semibold">Gọi trước khi đến: {storeConfig.phone}</a>
+            <span className="text-muted-2">Mở cửa {store.openHours} · Ra lò {store.freshBatchTime}</span>
+            <a href={store.phoneHref} className="font-semibold">Gọi trước khi đến: {store.phone}</a>
             <Link href="/ghe-tiem" className="text-sm font-semibold text-accent">Đường đến tiệm & giờ nhận bánh →</Link>
           </div>
           <div className="flex flex-[0_1_160px] flex-col gap-2">
@@ -86,7 +87,7 @@ export async function SiteFooter({ variant = "full" }: { variant?: "full" | "com
           </div>
         </div>
         <div className="flex flex-wrap justify-between gap-3 border-t border-maroon/15 pt-5 text-[13px] text-muted-2">
-          <span>© 2026 {storeConfig.name}</span>
+          <span>© 2026 {store.name}</span>
           <span>Bánh · Cà phê · Trà</span>
         </div>
       </div>

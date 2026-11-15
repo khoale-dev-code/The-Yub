@@ -10,7 +10,7 @@ import { animationsReduced } from "@/components/motion/motion-config";
 import { useLenis } from "@/components/motion/smooth-scroll";
 import { ArrowRightIcon, PhoneIcon } from "@/components/ui/icons";
 import { productImages, type ProductImageKey } from "@/lib/images";
-import { storeConfig } from "@/lib/store-config";
+import { useStoreInfo } from "@/components/brand/store-info-context";
 
 gsap.registerPlugin(SplitText);
 
@@ -31,17 +31,17 @@ const ribbon: { key: ProductImageKey; pos?: string; tall?: boolean }[] = [
   { key: "fruitEggTarts" },
 ];
 
-const steps = [
-  { target: "chon-banh", title: "Chọn bánh", text: "Bánh kem, hộp quà đặt trước 1 ngày" },
-  { target: "hen-gio", title: "Hẹn giờ ghé lấy", text: `Khung ${storeConfig.freshBatchTime} có mẻ bánh vừa ra lò` },
-  { target: "xac-nhan", title: "Tiệm gọi xác nhận", text: "Nhận tại tiệm, không phí giao" },
-];
-
 /**
  * Hero trang Đặt bánh online: tieu de can giua, 3 buoc bam duoc (cuon muot toi tung phan),
  * dai anh banh chay ngang (GSAP, re chuot thi dung, cuon nhanh thi chay nhanh) + huy hieu xoay.
  */
 export function BookingHero() {
+  const store = useStoreInfo();
+  const steps = [
+    { target: "chon-banh", title: "Chọn bánh", text: "Bánh kem, hộp quà đặt trước 1 ngày" },
+    { target: "hen-gio", title: "Hẹn giờ ghé lấy", text: `Khung ${store.freshBatchTime} có mẻ bánh vừa ra lò` },
+    { target: "xac-nhan", title: "Tiệm gọi xác nhận", text: "Nhận tại tiệm, không phí giao" },
+  ];
   const root = useRef<HTMLDivElement | null>(null);
   const badge = useRef<HTMLDivElement | null>(null);
   const track = useRef<HTMLDivElement | null>(null);
@@ -122,8 +122,8 @@ export function BookingHero() {
             <button type="button" onClick={() => scrollToId("chon-banh")} className="inline-flex min-h-[54px] w-full items-center justify-center gap-2 rounded-full border-0 bg-butter px-7 text-base font-bold text-maroon transition-[background-color,transform] hover:bg-cream active:scale-[0.97] sm:w-auto">
               Bắt đầu chọn bánh <ArrowRightIcon />
             </button>
-            <a href={storeConfig.phoneHref} className="inline-flex min-h-[54px] w-full items-center justify-center gap-2 rounded-full border-[1.5px] border-cream/50 px-6 font-semibold text-cream no-underline hover:border-butter hover:text-butter sm:w-auto">
-              <PhoneIcon /> Gọi {storeConfig.phone}
+            <a href={store.phoneHref} className="inline-flex min-h-[54px] w-full items-center justify-center gap-2 rounded-full border-[1.5px] border-cream/50 px-6 font-semibold text-cream no-underline hover:border-butter hover:text-butter sm:w-auto">
+              <PhoneIcon /> Gọi {store.phone}
             </a>
           </div>
 

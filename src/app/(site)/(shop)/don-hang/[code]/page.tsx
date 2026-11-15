@@ -3,7 +3,7 @@ import Link from "next/link";
 import { CheckIcon } from "@/components/ui/icons";
 import { formatVnd } from "@/lib/format";
 import { formatPickupDate, pickupSlotLabel } from "@/lib/pickup";
-import { storeConfig } from "@/lib/store-config";
+import { getStoreInfo } from "@/modules/settings/store-info-server";
 import { findOrderForCustomer } from "@/modules/orders/service";
 import { orderStatusForCustomer, paymentLabels, paymentStatusLabels } from "@/modules/orders/types";
 import { settingsRepository } from "@/modules/settings/repository";
@@ -24,6 +24,7 @@ const maskPhone = (phone: string) => {
 };
 
 export default async function DonHangPage({ params, searchParams }: PageProps) {
+  const store = await getStoreInfo();
   const [{ code }, { t }] = await Promise.all([params, searchParams]);
   const token = typeof t === "string" ? t : "";
   const [order, settings] = await Promise.all([findOrderForCustomer(decodeURIComponent(code), token), settingsRepository.get()]);
@@ -34,7 +35,7 @@ export default async function DonHangPage({ params, searchParams }: PageProps) {
         <h1 className="m-0 font-display text-4xl font-semibold">Không tìm thấy đơn</h1>
         <p className="m-0 text-muted">
           Link tra cứu chưa đúng hoặc đã hết hạn – cần hỗ trợ, gọi tiệm{" "}
-          <a href={storeConfig.phoneHref} className="font-semibold text-maroon">{storeConfig.phone}</a>.
+          <a href={store.phoneHref} className="font-semibold text-maroon">{store.phone}</a>.
         </p>
         <Link href="/thuc-don" className="inline-flex min-h-12 items-center rounded-full bg-maroon px-6 font-semibold text-cream no-underline hover:bg-accent hover:text-cream">Về thực đơn</Link>
       </div>
@@ -68,7 +69,7 @@ export default async function DonHangPage({ params, searchParams }: PageProps) {
         </ul>
         <div className="h-px bg-maroon/15" />
         <div className="flex items-baseline justify-between"><strong>Tổng cộng</strong><strong className="font-display text-[28px] font-semibold">{formatVnd(order.totalVnd)}</strong></div>
-        <p className="m-0 text-sm text-muted">Nhận tại tiệm: {settings.address ?? ADDRESS_PLACEHOLDER} · Mở cửa {storeConfig.openHours}</p>
+        <p className="m-0 text-sm text-muted">Nhận tại tiệm: {settings.address ?? ADDRESS_PLACEHOLDER} · Mở cửa {store.openHours}</p>
       </div>
     </div>
   );

@@ -5,11 +5,12 @@ import Link from "next/link";
 import { useState, type MouseEvent } from "react";
 import { CartAddIcon, MinusIcon, PlusIcon } from "@/components/ui/icons";
 import { formatVnd } from "@/lib/format";
-import { productImages } from "@/lib/images";
 import { lineKey, useCart } from "@/modules/cart/cart-context";
 import { announceCartAdd } from "@/modules/cart/cart-fx";
 import { unitPriceOf, variantLabelOf } from "@/modules/products/pricing";
 import type { Product } from "@/modules/products/types";
+import { useStoreInfo } from "@/components/brand/store-info-context";
+import { productStatusLabel } from "@/modules/products/types";
 
 const MAX_QTY = 20;
 
@@ -22,6 +23,7 @@ const statusBadge: Record<Product["status"], { label: string; cls: string }> = {
 
 /** The banh trong trang Dat banh: chon quy cach + tang/giam so luong ngay tren the. */
 export function BookingProductCard({ product }: { product: Product }) {
+  const store = useStoreInfo();
   const cart = useCart();
   const [variantId, setVariantId] = useState<string | undefined>(product.variants?.[0]?.id);
   const key = lineKey({ productId: product.id, variantId });
@@ -46,14 +48,14 @@ export function BookingProductCard({ product }: { product: Product }) {
     >
       <Link href={`/san-pham/${product.slug}`} aria-label={`Xem chi tiết ${product.name}`} className="relative block h-[108px] w-[104px] flex-none overflow-hidden rounded-[16px] bg-beige sm:aspect-[4/3] sm:h-auto sm:w-full sm:rounded-none">
         <Image
-          src={productImages[product.image]}
+          src={product.cover}
           alt=""
           fill
           sizes="(min-width: 1024px) 240px, (min-width: 640px) 45vw, 104px"
           className={`object-cover transition-transform duration-[900ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.06] ${soldOut ? "grayscale-[0.6]" : ""}`}
           style={{ objectPosition: product.imagePosition ?? "center" }}
         />
-        <span className={`absolute left-1.5 top-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold sm:left-3 sm:top-3 sm:px-2.5 sm:py-1 sm:text-xs ${badge.cls}`}>{badge.label}</span>
+        <span className={`absolute left-1.5 top-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold sm:left-3 sm:top-3 sm:px-2.5 sm:py-1 sm:text-xs ${badge.cls}`}>{productStatusLabel(product.status, store.freshBatchTime)}</span>
         {totalInCart > 0 && (
           <span key={totalInCart} className="absolute right-1.5 top-1.5 flex h-7 min-w-7 items-center justify-center rounded-full bg-maroon px-1.5 text-[13px] font-bold text-cream shadow-[0_6px_14px_rgba(36,18,13,0.35)] animate-[yub-qty-pop_.4s_cubic-bezier(.34,1.56,.64,1)] sm:right-3 sm:top-3 sm:h-8 sm:min-w-8">
             ×{totalInCart}

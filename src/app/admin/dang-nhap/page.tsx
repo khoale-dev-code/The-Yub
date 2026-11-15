@@ -6,7 +6,7 @@ import { ClockIcon, ShieldIcon } from "@/components/admin/admin-icons";
 import { LoginForm } from "@/components/admin/login-form";
 import { brandImages, productImages } from "@/lib/images";
 import { missingSupabaseEnv } from "@/lib/supabase/server";
-import { storeConfig } from "@/lib/store-config";
+import { getStoreInfo } from "@/modules/settings/store-info-server";
 import { getAdminMode, getAdminUser } from "@/modules/admin/session";
 
 export const metadata: Metadata = { title: "Đăng nhập" };
@@ -22,6 +22,7 @@ const steps = [
 const rise = "motion-safe:animate-[yub-rise_0.8s_cubic-bezier(0.2,0.7,0.2,1)_both]";
 
 export default async function AdminLoginPage() {
+  const store = await getStoreInfo();
   const mode = getAdminMode();
   const missing = missingSupabaseEnv();
   if (await getAdminUser()) redirect("/admin");
@@ -53,10 +54,10 @@ export default async function AdminLoginPage() {
             </p>
             <ul className="m-0 flex list-none flex-wrap gap-2 p-0 text-[14px] font-semibold">
               <li className="inline-flex items-center gap-2 rounded-full bg-cream/15 px-3.5 py-2 backdrop-blur-sm">
-                <ClockIcon size={16} /> Mở cửa {storeConfig.openHours}
+                <ClockIcon size={16} /> Mở cửa {store.openHours}
               </li>
               <li className="inline-flex items-center gap-2 rounded-full bg-butter px-3.5 py-2 text-maroon">
-                Mẻ bánh mới {storeConfig.freshBatchTime}
+                Mẻ bánh mới {store.freshBatchTime}
               </li>
             </ul>
           </div>
@@ -118,7 +119,7 @@ export default async function AdminLoginPage() {
 
         <div className="mt-6 flex items-center justify-between gap-3 text-[13px] text-muted lg:text-cream/45">
           <Link href="/" prefetch={false} className="inline-flex min-h-10 items-center font-semibold text-muted no-underline hover:text-maroon lg:hidden">← Về trang web</Link>
-          <span className="lg:ml-auto">{storeConfig.slogan}</span>
+          <span className="lg:ml-auto">{store.slogan}</span>
         </div>
       </main>
     </div>

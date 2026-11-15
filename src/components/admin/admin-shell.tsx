@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { brandImages } from "@/lib/images";
 import { signOutAction } from "@/modules/admin/auth-actions";
-import { CakeIcon, ChartIcon, ClockIcon, CupIcon, ExternalIcon, GearIcon, HomeIcon, InboxIcon, LogoutIcon, MoreIcon, ReceiptIcon, XIcon } from "./admin-icons";
+import { CakeIcon, ChartIcon, ClockIcon, CupIcon, ExternalIcon, GearIcon, HomeIcon, InboxIcon, LogoutIcon, MoreIcon, ReceiptIcon, TagIcon, XIcon } from "./admin-icons";
 import { NavPending, NavPendingBar } from "./nav-pending";
 import { AdminToaster } from "./toast";
 
@@ -42,6 +42,7 @@ export function AdminShell({ user, counts, children }: { user: ShellUser; counts
   const store: NavItem[] = [
     { href: "/admin/mon", label: "Món bánh", icon: CakeIcon },
     { href: "/admin/do-uong", label: "Đồ uống", icon: CupIcon },
+    { href: "/admin/danh-muc", label: "Danh mục", icon: TagIcon },
     { href: "/admin/khung-gio", label: "Khung giờ", icon: ClockIcon },
     // Bao cao co doanh thu -> chi chu tiem
     ...(user.role === "owner" ? [{ href: "/admin/bao-cao", label: "Báo cáo", icon: ChartIcon }] : []),

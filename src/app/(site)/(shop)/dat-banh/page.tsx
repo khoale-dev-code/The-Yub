@@ -3,14 +3,18 @@ import Link from "next/link";
 import { BookingHero } from "@/components/booking/booking-hero";
 import { BookingPlanner } from "@/components/booking/booking-planner";
 import { ArrowRightIcon } from "@/components/ui/icons";
-import { storeConfig } from "@/lib/store-config";
+import { getStoreInfo } from "@/modules/settings/store-info-server";
 import { productsRepository } from "@/modules/products/repository";
 import { settingsRepository } from "@/modules/settings/repository";
+import { categoriesRepository } from "@/modules/categories/repository";
 
-export const metadata: Metadata = {
-  title: "Đặt bánh online",
-  description: `Chọn bánh, hẹn ngày và khung giờ ghé lấy tại The Yub. Mẻ bánh chiều ra lò ${storeConfig.freshBatchTime}; bánh kem và hộp quà đặt trước 1 ngày.`,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const store = await getStoreInfo();
+  return {
+    title: "Đặt bánh online",
+    description: `Chọn bánh, hẹn ngày và khung giờ ghé lấy tại The Yub. Mẻ bánh chiều ra lò ${store.freshBatchTime}; bánh kem và hộp quà đặt trước 1 ngày.`,
+  };
+}
 
 const after = [
   { n: "1", title: "Điền thông tin nhận", text: "Họ tên, số điện thoại và ghi chú (ví dụ chữ viết trên bánh kem)." },
@@ -19,13 +23,13 @@ const after = [
 ];
 
 export default async function DatBanhPage() {
-  const [products, settings] = await Promise.all([productsRepository.list(), settingsRepository.get()]);
+  const [products, settings, categories] = await Promise.all([productsRepository.list(), settingsRepository.get(), categoriesRepository.list("product")]);
   const pausedMessage = settings.orderingEnabled ? null : settings.orderingPausedMessage || "Tiệm đang tạm ngưng nhận đơn online – vui lòng gọi tiệm để đặt bánh.";
 
   return (
     <>
       <BookingHero />
-      <BookingPlanner products={products} pausedMessage={pausedMessage} />
+      <BookingPlanner products={products} categories={categories} pausedMessage={pausedMessage} />
 
       {/* Sau khi gửi đơn */}
       <section className="bg-beige">

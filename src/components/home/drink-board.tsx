@@ -3,26 +3,22 @@
 import Link from "next/link";
 import { useState } from "react";
 import { formatVnd } from "@/lib/format";
-import { storeConfig } from "@/lib/store-config";
+import { useStoreInfo } from "@/components/brand/store-info-context";
 import type { Drink } from "@/modules/products/types";
 import { ArrowRightIcon } from "../ui/icons";
+import type { Category } from "@/modules/categories/types";
 
-const tabs = [
-  { id: "coffee", label: "Cà phê" },
-  { id: "tea", label: "Trà & trái cây" },
-  { id: "other", label: "Không cà phê" },
-] as const;
-
-type TabId = (typeof tabs)[number]["id"];
-
-const inTab = (d: Drink, tab: TabId) => (tab === "other" ? d.group === "other" || d.group === "juice" : d.group === tab);
 
 const tempLabel = { hot: "Nóng", ice: "Đá" } as const;
 
 /** Bang menu toi (Home) – tab nhom do uong, ten Fraunces, dot leader, gia butter. */
-export function DrinkBoard({ drinks, variant = "dark" }: { drinks: Drink[]; variant?: "dark" | "light" }) {
-  const [tab, setTab] = useState<TabId>("coffee");
-  const list = drinks.filter((d) => inTab(d, tab)).slice(0, variant === "light" ? 5 : 8);
+/** groups: danh muc do uong theo thu tu Admin – chi hien nhom co mon */
+export function DrinkBoard({ drinks, groups, variant = "dark" }: { drinks: Drink[]; groups: Category[]; variant?: "dark" | "light" }) {
+  const store = useStoreInfo();
+  const tabs = groups.filter((g) => drinks.some((d) => d.group === g.slug)).map((g) => ({ id: g.slug, label: g.name }));
+  const [picked, setTab] = useState<string | null>(null);
+  const tab = picked && tabs.some((t) => t.id === picked) ? picked : (tabs[0]?.id ?? "");
+  const list = drinks.filter((d) => d.group === tab).slice(0, variant === "light" ? 5 : 8);
   const idPrefix = `drink-${variant}`;
 
   if (variant === "light") {
@@ -30,11 +26,11 @@ export function DrinkBoard({ drinks, variant = "dark" }: { drinks: Drink[]; vari
       <div className="flex flex-col gap-4 rounded-3xl border border-maroon/12 bg-card px-[18px] py-5">
         <div className="flex items-baseline justify-between gap-3">
           <h3 className="m-0 font-display text-[22px] font-semibold leading-[1.2]">Thực đơn đồ uống</h3>
-          <span className="flex-none text-xs text-muted-2">{storeConfig.openHours}</span>
+          <span className="flex-none text-xs text-muted-2">{store.openHours}</span>
         </div>
-        <div role="tablist" aria-label="Nhóm đồ uống" className="grid grid-cols-3 gap-1 rounded-full bg-beige p-1">
+        <div role="tablist" aria-label="Nhóm đồ uống" className="no-scrollbar flex gap-1 overflow-x-auto rounded-full bg-beige p-1">
           {tabs.map((t) => (
-            <button key={t.id} id={`${idPrefix}-tab-${t.id}`} type="button" role="tab" aria-selected={tab === t.id} aria-controls={`${idPrefix}-panel`} onClick={() => setTab(t.id)} className={`min-h-11 rounded-full border-0 px-1.5 text-[13px] font-semibold leading-[1.2] ${tab === t.id ? "bg-maroon text-cream" : "bg-transparent text-maroon"}`}>
+            <button key={t.id} id={`${idPrefix}-tab-${t.id}`} type="button" role="tab" aria-selected={tab === t.id} aria-controls={`${idPrefix}-panel`} onClick={() => setTab(t.id)} className={`min-h-11 flex-[1_0_auto] whitespace-nowrap rounded-full border-0 px-3 text-[13px] font-semibold leading-[1.2] ${tab === t.id ? "bg-maroon text-cream" : "bg-transparent text-maroon"}`}>
               {t.label}
             </button>
           ))}
@@ -67,7 +63,7 @@ export function DrinkBoard({ drinks, variant = "dark" }: { drinks: Drink[]; vari
       </svg>
       <div className="relative flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
         <h3 className="m-0 font-display text-[32px] font-semibold leading-[1.2]">Thực đơn đồ uống</h3>
-        <span className="text-[13px] text-cream/75">Mở cửa {storeConfig.openHours}</span>
+        <span className="text-[13px] text-cream/75">Mở cửa {store.openHours}</span>
       </div>
       <div role="tablist" aria-label="Nhóm đồ uống" className="relative flex flex-wrap gap-2">
         {tabs.map((t) => (

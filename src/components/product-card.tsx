@@ -1,7 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import { formatVnd } from "@/lib/format";
-import { productImages } from "@/lib/images";
 import type { Product } from "@/modules/products/types";
 import { AddToCartButton } from "./add-to-cart-button";
 import { FavoriteButton } from "./favorite-button";
@@ -16,7 +15,7 @@ export function ProductCard({ product, sizes = "(min-width: 1024px) 280px, (min-
       <div className="relative aspect-[1/1.15] overflow-hidden bg-beige">
         <Link href={href} aria-label={`Xem ${product.name}`} className="group block h-full w-full">
           <Image
-            src={productImages[product.image]}
+            src={product.cover}
             alt={product.name}
             fill
             sizes={sizes}

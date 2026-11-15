@@ -3,8 +3,9 @@
 import gsap from "gsap";
 import { useEffect, useRef } from "react";
 import { useLenis } from "../motion/smooth-scroll";
+import { useStoreInfo } from "@/components/brand/store-info-context";
 
-const words = ["Giòn rụm", "Thơm bơ", "Ra lò 14:30", "Cà phê & trà", "Bakes & More", "Đặt trước online"];
+const wordsOf = (fresh: string) => ["Giòn rụm", "Thơm bơ", `Ra lò ${fresh}`, "Cà phê & trà", "Bakes & More", "Đặt trước online"];
 const LOOP_SECONDS = 32;
 
 /**
@@ -43,6 +44,7 @@ export function Marquee() {
     if (tween.current) gsap.to(tween.current, { timeScale: value, duration: value === 0 ? 0.6 : 0.8, ease: "power2.out", overwrite: true });
   };
 
+  const words = wordsOf(useStoreInfo().freshBatchTime);
   const items = [...words, ...words];
   return (
     <div className="overflow-hidden pb-2 pt-7">

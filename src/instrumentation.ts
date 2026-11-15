@@ -10,6 +10,7 @@ const ROUTES = [
   "/admin/hop-thu",
   "/admin/mon",
   "/admin/do-uong",
+  "/admin/danh-muc",
   "/admin/khung-gio",
   "/admin/cai-dat",
   "/admin/bao-cao",

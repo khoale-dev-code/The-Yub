@@ -4,13 +4,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useOptimistic, useState, useTransition } from "react";
 import { formatVnd } from "@/lib/format";
-import { productImages } from "@/lib/images";
 import { updateProductQuickAction } from "@/modules/admin/actions";
-import { categoryLabels, productCategories, productStatusLabels, type Product, type ProductCategory, type ProductStatus } from "@/modules/products/types";
+import { categoryName, type Category } from "@/modules/categories/types";
+import { productStatusLabel, type Product, type ProductCategory, type ProductStatus } from "@/modules/products/types";
 import { SearchIcon } from "./admin-icons";
 import { Switch } from "./switch";
 import { toast } from "./toast";
 import { card, input, productStatusTone } from "./ui";
+import { useStoreInfo } from "@/components/brand/store-info-context";
 
 const STATUSES: ProductStatus[] = ["ready", "oven", "pre", "out"];
 const shortStatus: Record<ProductStatus, string> = { ready: "Có sẵn", oven: "Ra lò", pre: "Đặt trước", out: "Hết" };
@@ -18,7 +19,8 @@ const shortStatus: Record<ProductStatus, string> = { ready: "Có sẵn", oven: "
 type Patch = { id: string; status?: ProductStatus; isActive?: boolean };
 
 /** Danh sach mon: doi trang thai / an-hien ngay tai cho (luu tuc thi, cap nhat web) */
-export function ProductManager({ products }: { products: Product[] }) {
+export function ProductManager({ products, categories }: { products: Product[]; categories: Category[] }) {
+  const store = useStoreInfo();
   const [cat, setCat] = useState<ProductCategory | "all">("all");
   const [q, setQ] = useState("");
   const [, start] = useTransition();
@@ -45,9 +47,9 @@ export function ProductManager({ products }: { products: Product[] }) {
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Tìm món…" aria-label="Tìm món" className={`${input} pl-10`} />
         </div>
         <div className="no-scrollbar -mx-4 flex gap-1.5 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-          {(["all", ...productCategories] as const).map((c) => (
+          {["all", ...categories.map((x) => x.slug)].map((c) => (
             <button key={c} type="button" onClick={() => setCat(c)} aria-pressed={cat === c} className={`min-h-10 flex-none rounded-full border-0 px-3.5 text-[14px] font-semibold ${cat === c ? "bg-dark text-cream" : "bg-transparent text-muted hover:bg-maroon/5"}`}>
-              {c === "all" ? "Tất cả" : categoryLabels[c]}
+              {c === "all" ? "Tất cả" : categoryName(categories, c)}
             </button>
           ))}
         </div>
@@ -59,12 +61,12 @@ export function ProductManager({ products }: { products: Product[] }) {
           return (
             <li key={p.id} className={`${card} grid grid-cols-[64px_minmax(0,1fr)] gap-x-3.5 gap-y-3 p-3 md:grid-cols-[64px_minmax(0,1fr)_auto_auto_auto] md:items-center md:gap-x-5 md:px-4 ${hidden ? "opacity-70" : ""}`}>
               <span className="relative row-span-2 h-16 w-16 overflow-hidden rounded-[14px] bg-beige md:row-span-1">
-                <Image src={productImages[p.image]} alt="" fill sizes="64px" className="object-cover" style={{ objectPosition: p.imagePosition ?? "center" }} />
+                <Image src={p.cover} alt="" fill sizes="64px" className="object-cover" style={{ objectPosition: p.imagePosition ?? "center" }} />
               </span>
               <div className="flex min-w-0 flex-col">
                 <Link href={`/admin/mon/${encodeURIComponent(p.id)}`} className="truncate text-[16px] font-bold no-underline hover:text-accent">{p.name}</Link>
                 <span className="text-[13px] text-muted">
-                  {categoryLabels[p.category]} · {p.variants?.length ? `${p.variants.length} quy cách, từ ${formatVnd(Math.min(...p.variants.map((v) => v.priceVnd)))}` : formatVnd(p.priceVnd)}
+                  {categoryName(categories, p.category)} · {p.variants?.length ? `${p.variants.length} quy cách, từ ${formatVnd(Math.min(...p.variants.map((v) => v.priceVnd)))}` : formatVnd(p.priceVnd)}
                   {hidden && <span className="ml-1.5 rounded-full bg-maroon/10 px-1.5 text-[12px] font-semibold">Đang ẩn</span>}
                 </span>
               </div>
@@ -78,8 +80,8 @@ export function ProductManager({ products }: { products: Product[] }) {
                       type="button"
                       role="radio"
                       aria-checked={on}
-                      title={productStatusLabels[s]}
-                      onClick={() => !on && save({ id: p.id, status: s }, `${p.name}: ${productStatusLabels[s]}`)}
+                      title={productStatusLabel(s, store.freshBatchTime)}
+                      onClick={() => !on && save({ id: p.id, status: s }, `${p.name}: ${productStatusLabel(s, store.freshBatchTime)}`)}
                       className={`min-h-9 rounded-full border-0 px-2 text-[13px] font-semibold transition-colors ${on ? `${productStatusTone[s]} shadow-sm` : "bg-transparent text-muted hover:text-maroon"}`}
                     >
                       {shortStatus[s]}

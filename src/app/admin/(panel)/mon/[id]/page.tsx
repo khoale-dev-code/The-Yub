@@ -6,6 +6,7 @@ import { ProductForm } from "@/components/admin/product-form";
 import { PageHeader, btn } from "@/components/admin/ui";
 import { requireAdmin } from "@/modules/admin/session";
 import { productsRepository } from "@/modules/products/repository";
+import { categoriesRepository } from "@/modules/categories/repository";
 
 export const metadata: Metadata = { title: "Sửa món" };
 
@@ -21,7 +22,7 @@ export default async function AdminProductEditPage({ params }: { params: Promise
         title={product.name}
         actions={product.isActive !== false ? <Link href={`/san-pham/${product.slug}`} prefetch={false} target="_blank" className={btn.secondary}><ExternalIcon size={16} /> Xem trên web</Link> : undefined}
       />
-      <ProductForm product={product} canDelete={user.role === "owner"} />
+      <ProductForm product={product} categories={await categoriesRepository.listFresh("product")} canDelete={user.role === "owner"} />
     </>
   );
 }

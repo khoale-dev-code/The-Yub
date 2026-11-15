@@ -15,10 +15,19 @@ export const pickupSlots: PickupSlot[] = [
   { id: "s1", label: "08:00 – 10:00", start: "08:00", end: "10:00", note: "Sáng" },
   { id: "s2", label: "10:00 – 12:00", start: "10:00", end: "12:00", note: "Sáng" },
   { id: "s3", label: "12:00 – 14:30", start: "12:00", end: "14:30", note: "Trưa" },
-  { id: "s4", label: "14:30 – 16:00", start: "14:30", end: "16:00", note: "Mẻ mới", hot: true },
+  { id: "s4", label: "14:30 – 16:00", start: "14:30", end: "16:00", note: "Đầu chiều", hot: true },
   { id: "s5", label: "16:00 – 18:00", start: "16:00", end: "18:00", note: "Chiều" },
   { id: "s6", label: "18:00 – 19:00", start: "18:00", end: "19:00", note: "Tối" },
 ];
+
+const hhmm = (t: string) => {
+  const [h, m] = t.split(":").map(Number);
+  return (h ?? 0) * 60 + (m ?? 0);
+};
+
+/** Khung gio co me banh vua ra lo (theo gio me banh trong Admin > Cai dat) */
+export const isFreshSlot = (slot: Pick<PickupSlot, "start" | "end">, freshBatchTime: string) =>
+  hhmm(slot.start) <= hhmm(freshBatchTime) && hhmm(freshBatchTime) < hhmm(slot.end);
 
 /** So ngay hien thi de chon (hom nay + 6 ngay, nam trong gioi han 7 ngay cua server) */
 export const PICKUP_DATE_COUNT = 7;

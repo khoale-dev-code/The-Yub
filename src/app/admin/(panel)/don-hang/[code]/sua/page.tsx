@@ -8,6 +8,7 @@ import { EDITABLE } from "@/modules/admin/orders";
 import { requireAdmin } from "@/modules/admin/session";
 import { getOrdersRepository } from "@/modules/orders/repository";
 import { productsRepository } from "@/modules/products/repository";
+import { categoriesRepository } from "@/modules/categories/repository";
 
 export const metadata: Metadata = { title: "Sửa đơn" };
 
@@ -27,6 +28,7 @@ export default async function AdminEditOrderPage({ params }: { params: Promise<{
         description={order.paymentStatus === "paid" ? "Đơn đã ghi nhận thanh toán: chỉ đổi được thông tin, không đổi món làm thay đổi tổng tiền." : "Đổi món, số lượng, ngày giờ nhận hoặc thông tin khách. Tổng tiền tính lại theo giá hiện tại."}
       />
       <OrderForm
+        categories={await categoriesRepository.list("product")}
         products={all.filter((p) => p.isActive !== false)}
         initial={{
           code,

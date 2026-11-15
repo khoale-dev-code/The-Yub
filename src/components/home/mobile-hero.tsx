@@ -3,13 +3,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { storeConfig } from "@/lib/store-config";
+import { useStoreInfo } from "@/components/brand/store-info-context";
 import { ArrowRightIcon } from "../ui/icons";
 import { TornWave } from "../ui/torn-wave";
 import { HERO_AUTOPLAY_MS, type HeroSlide } from "./hero-carousel";
 
 /** Hero cho dien thoai: anh tran vien tu chuyen sau 3 giay, the gia doi theo anh (Mobile-v2). */
 export function MobileHero({ slides }: { slides: HeroSlide[] }) {
+  const store = useStoreInfo();
   const [idx, setIdx] = useState(0);
 
   useEffect(() => {
@@ -43,7 +44,7 @@ export function MobileHero({ slides }: { slides: HeroSlide[] }) {
         <div aria-hidden="true" className="absolute inset-0 bg-[linear-gradient(0deg,rgba(28,12,8,0.82)_0%,rgba(28,12,8,0.55)_32%,rgba(28,12,8,0.05)_62%,rgba(28,12,8,0)_100%)]" />
         <span className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-cream/25 bg-dark/45 px-3.5 py-2 text-[13px] font-semibold text-cream backdrop-blur-md">
           <span aria-hidden="true" className="h-2 w-2 rounded-full bg-butter" />
-          Mẻ mới ra lò lúc {storeConfig.freshBatchTime}
+          Mẻ mới ra lò lúc {store.freshBatchTime}
         </span>
         {!slide.brand && slide.item && (
         <div key={idx} className="absolute right-[22px] top-[170px] flex rotate-4 animate-[yub-pop_0.6s_cubic-bezier(0.34,1.56,0.64,1)] flex-col items-center rounded-[18px] bg-butter px-5 py-3 text-maroon shadow-[0_14px_30px_rgba(0,0,0,0.35)]">

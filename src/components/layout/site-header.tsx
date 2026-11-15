@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { brandImages } from "@/lib/images";
-import { storeConfig } from "@/lib/store-config";
+import { useStoreInfo } from "@/components/brand/store-info-context";
 import { useCart } from "@/modules/cart/cart-context";
 import { useLenis } from "../motion/smooth-scroll";
 import { AnnouncementBar } from "./announcement-bar";
@@ -13,6 +13,7 @@ import { mainNav } from "./nav-links";
 import { ArrowRightIcon, BagIcon, CloseIcon, HeartIcon, MenuIcon, SearchIcon, UserIcon } from "../ui/icons";
 
 export function SiteHeader() {
+  const store = useStoreInfo();
   const { count } = useCart();
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
@@ -105,7 +106,7 @@ export function SiteHeader() {
           </Link>
           <div className="flex justify-end gap-1">
             <Link href="/thuc-don" aria-label="Danh sách yêu thích" className="flex h-11 w-11 items-center justify-center"><HeartIcon /></Link>
-            <a href={storeConfig.phoneHref} aria-label="Gọi tiệm" className="flex h-11 w-11 items-center justify-center"><UserIcon /></a>
+            <a href={store.phoneHref} aria-label="Gọi tiệm" className="flex h-11 w-11 items-center justify-center"><UserIcon /></a>
             <Link href="/gio-hang" aria-label={cartLabel} data-cart-target className="relative flex h-11 w-11 items-center justify-center">
               <BagIcon />
               <span data-cart-badge className="absolute right-0.5 top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-maroon px-1 text-[11px] font-bold text-cream">{count}</span>
@@ -150,18 +151,18 @@ export function SiteHeader() {
             <div className="grid grid-cols-2 gap-2.5">
               <div className="flex flex-col rounded-[18px] border border-cream/20 px-3.5 py-3">
                 <span className="text-xs text-cream/75">Mở cửa</span>
-                <span className="font-display text-[19px] font-semibold">{storeConfig.openHours}</span>
+                <span className="font-display text-[19px] font-semibold">{store.openHours}</span>
               </div>
               <div className="flex flex-col rounded-[18px] border border-cream/20 px-3.5 py-3">
                 <span className="text-xs text-cream/75">Bánh ra lò</span>
-                <span className="font-display text-[19px] font-semibold text-butter">{storeConfig.freshBatchTime}</span>
+                <span className="font-display text-[19px] font-semibold text-butter">{store.freshBatchTime}</span>
               </div>
             </div>
             <Link href="/thuc-don" onClick={() => setMenuOpen(false)} className="flex min-h-[54px] items-center justify-center gap-2 rounded-full bg-butter font-bold text-maroon no-underline hover:text-maroon">
               Đặt bánh ngay <ArrowRightIcon />
             </Link>
-            <a href={storeConfig.phoneHref} className="flex min-h-11 items-center self-center text-sm text-cream/85 hover:text-butter">
-              Gọi tiệm: {storeConfig.phone}
+            <a href={store.phoneHref} className="flex min-h-11 items-center self-center text-sm text-cream/85 hover:text-butter">
+              Gọi tiệm: {store.phone}
             </a>
           </div>
         </div>

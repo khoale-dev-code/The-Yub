@@ -7,7 +7,6 @@ import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "re
 import { animationsReduced } from "@/components/motion/motion-config";
 import { ArrowRightIcon, CloseIcon } from "@/components/ui/icons";
 import { formatVnd } from "@/lib/format";
-import { productImages } from "@/lib/images";
 import { paymentLabels } from "@/modules/orders/types";
 import type { Product } from "@/modules/products/types";
 
@@ -134,7 +133,7 @@ export function BookingSummary({ rows, itemCount, subtotal, pickupLabel, blocker
           {rows.map((r) => (
             <li key={r.key} data-row={r.key} className="grid grid-cols-[48px_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl py-1.5">
               <span className="relative h-12 w-12 overflow-hidden rounded-xl bg-beige">
-                <Image src={productImages[r.product.image]} alt="" fill sizes="48px" className="object-cover" style={{ objectPosition: r.product.imagePosition ?? "center" }} />
+                <Image src={r.product.cover} alt="" fill sizes="48px" className="object-cover" style={{ objectPosition: r.product.imagePosition ?? "center" }} />
               </span>
               <span className="flex min-w-0 flex-col leading-[1.35]">
                 <span className="truncate text-[15px] font-semibold">{r.product.name}</span>

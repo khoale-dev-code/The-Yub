@@ -15,13 +15,15 @@ import {
   pickupSlots,
   type PickupDateOption,
 } from "@/lib/pickup";
-import { storeConfig } from "@/lib/store-config";
+import { useStoreInfo } from "@/components/brand/store-info-context";
 import { slotAvailabilityAction, type SlotAvailability } from "@/modules/slots/actions";
 import { lineKey, useCart } from "@/modules/cart/cart-context";
 import { unitPriceOf, variantLabelOf } from "@/modules/products/pricing";
-import { categoryLabels, type Product, type ProductCategory } from "@/modules/products/types";
+import { categoryName, type Category } from "@/modules/categories/types";
+import type { Product, ProductCategory } from "@/modules/products/types";
 import { BookingProductCard } from "./booking-product-card";
 import { BookingMobileBar, BookingSummary, type BookingBlocker, type BookingRow } from "./booking-summary";
+import { isFreshSlot } from "@/lib/pickup";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -36,9 +38,9 @@ const STEPS = [
 /** Chua phan header + thanh buoc khi cuon toi tung khu */
 const SECTION_OFFSET = { scrollMarginTop: "calc(var(--yub-header-h) + 84px)" } as const;
 
-const CATEGORY_ORDER: ProductCategory[] = ["croissant", "tart", "cake", "cookie", "combo"];
 
-export function BookingPlanner({ products, pausedMessage = null }: { products: Product[]; /** Tiem tam ngung nhan don online (Admin > Cai dat) */ pausedMessage?: string | null }) {
+export function BookingPlanner({ products, categories, pausedMessage = null }: { products: Product[]; categories: Category[]; /** Tiem tam ngung nhan don online (Admin > Cai dat) */ pausedMessage?: string | null }) {
+  const store = useStoreInfo();
   const cart = useCart();
   const lenis = useLenis();
   const [filter, setFilter] = useState<Filter>("all");
@@ -57,10 +59,10 @@ export function BookingPlanner({ products, pausedMessage = null }: { products: P
   // Ngay & gio tinh o client (tranh lech gio server)
   useEffect(() => {
     setDates(getPickupDateOptions(PICKUP_DATE_COUNT));
-    setNow(nowMinutesVN(storeConfig.timeZone));
-    const t = window.setInterval(() => setNow(nowMinutesVN(storeConfig.timeZone)), 60_000);
+    setNow(nowMinutesVN(store.timeZone));
+    const t = window.setInterval(() => setNow(nowMinutesVN(store.timeZone)), 60_000);
     return () => window.clearInterval(t);
-  }, []);
+  }, [store.timeZone]);
 
   const todayValue = dates[0]?.value;
   const todayClosed = now !== null && pickupSlots.every((s) => isSlotPast(s, now));
@@ -139,7 +141,7 @@ export function BookingPlanner({ products, pausedMessage = null }: { products: P
               : slotClosed(cart.pickup.slotId)
                 ? { message: "Khung giờ này đã kín đơn – chọn khung giờ khác.", target: "hen-gio", action: "Đổi giờ" }
                 : pausedMessage
-                  ? { message: pausedMessage, target: "tel", action: `Gọi ${storeConfig.phone}` }
+                  ? { message: pausedMessage, target: "tel", action: `Gọi ${store.phone}` }
                   : null;
 
   const stepDone = [rows.length > 0 && !hasSoldOut, Boolean(selectedDate) && !todayBlocked && !slotPast(cart.pickup.slotId) && !slotClosed(cart.pickup.slotId), false];
@@ -154,7 +156,7 @@ export function BookingPlanner({ products, pausedMessage = null }: { products: P
   const scrollToId = useCallback(
     (id: string) => {
       if (id === "tel") {
-        window.location.href = storeConfig.phoneHref;
+        window.location.href = store.phoneHref;
         return;
       }
       const el = document.getElementById(id);
@@ -162,7 +164,7 @@ export function BookingPlanner({ products, pausedMessage = null }: { products: P
       if (lenis) lenis.scrollTo(el, { duration: 1.2 });
       else el.scrollIntoView({ behavior: "smooth", block: "start" });
     },
-    [lenis],
+    [lenis, store.phoneHref],
   );
 
   // Hieu ung khi cuon: the banh xuat hien lan luot, thanh tien trinh chay theo cuon, buoc dang xem
@@ -229,7 +231,7 @@ export function BookingPlanner({ products, pausedMessage = null }: { products: P
 
   const tabs: { id: Filter; label: string; count: number }[] = [
     { id: "all", label: "Tất cả", count: products.length },
-    ...CATEGORY_ORDER.filter((c) => counts[c]).map((c) => ({ id: c, label: categoryLabels[c], count: counts[c] ?? 0 })),
+    ...categories.filter((c) => counts[c.slug]).map((c) => ({ id: c.slug, label: c.name, count: counts[c.slug] ?? 0 })),
   ];
 
   const onStep = (i: number) => {
@@ -306,7 +308,7 @@ export function BookingPlanner({ products, pausedMessage = null }: { products: P
               })}
             </div>
 
-            <div ref={gridRef} role="tabpanel" aria-label={filter === "all" ? "Tất cả bánh" : categoryLabels[filter]} className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
+            <div ref={gridRef} role="tabpanel" aria-label={filter === "all" ? "Tất cả bánh" : categoryName(categories, filter)} className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
               {visible.map((p) => (
                 <BookingProductCard key={p.id} product={p} />
               ))}
@@ -318,7 +320,7 @@ export function BookingPlanner({ products, pausedMessage = null }: { products: P
           <section id="hen-gio" data-no-reveal aria-labelledby="db-gio" style={SECTION_OFFSET} className="flex flex-col gap-6">
             <div data-booking-reveal className="flex flex-col gap-2">
               <h2 id="db-gio" className="m-0 font-display text-[34px] font-semibold leading-[1.08] tracking-[-0.015em] md:text-[44px]">Hẹn giờ ghé lấy</h2>
-              <p className="m-0 max-w-[560px] text-[16px] text-muted">Tiệm mở {storeConfig.openHours}. Chọn khung {storeConfig.freshBatchTime} nếu muốn lấy bánh vừa ra lò còn ấm.</p>
+              <p className="m-0 max-w-[560px] text-[16px] text-muted">Tiệm mở {store.openHours}. Chọn khung {store.freshBatchTime} nếu muốn lấy bánh vừa ra lò còn ấm.</p>
             </div>
 
             <div data-booking-reveal className="flex flex-col gap-3">
@@ -369,7 +371,7 @@ export function BookingPlanner({ products, pausedMessage = null }: { products: P
                     >
                       <span className="font-display text-[19px] font-semibold leading-[1.15] tabular-nums">{s.label}</span>
                       <span className={`text-[13px] ${on ? "text-cream/80" : "text-muted"}`}>{past ? "Đã qua" : state === "full" ? "Đã kín" : state === "off" ? "Tạm nghỉ" : s.note}</span>
-                      {s.hot && <span className="absolute right-2.5 top-2.5 rounded-full bg-butter px-2 py-px text-[11px] font-bold text-maroon">Bánh ấm</span>}
+                      {isFreshSlot(s, store.freshBatchTime) && <span className="absolute right-2.5 top-2.5 rounded-full bg-butter px-2 py-px text-[11px] font-bold text-maroon">Bánh ấm</span>}
                     </button>
                   );
                 })}
@@ -381,7 +383,7 @@ export function BookingPlanner({ products, pausedMessage = null }: { products: P
               {[
                 { t: "Tiệm gọi xác nhận", d: "Trong giờ mở cửa, trước khi chuẩn bị bánh." },
                 { t: "Bánh kem, hộp quà", d: "Đặt trước ít nhất 1 ngày – ghi chú chữ trên bánh ở bước sau." },
-                { t: "Cần đổi giờ?", d: `Gọi ${storeConfig.phone} trong giờ mở cửa.` },
+                { t: "Cần đổi giờ?", d: `Gọi ${store.phone} trong giờ mở cửa.` },
               ].map((n) => (
                 <li key={n.t} className="flex flex-col gap-1 rounded-[18px] bg-beige px-4 py-3.5">
                   <strong className="text-[15px]">{n.t}</strong>

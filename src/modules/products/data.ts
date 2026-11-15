@@ -5,7 +5,10 @@ import type { Drink, Product } from "./types";
  * Gia la GIA MAU de demo UI; gia ban chinh thuc se do chu tiem
  * nhap qua Admin (hoac supabase/seed.sql) truoc khi di live.
  */
-export const products: Product[] = [
+/** Du lieu mau – media / cover duoc tinh khi nap (xem repository) */
+export type SeedProduct = Omit<Product, "media" | "cover">;
+
+export const products: SeedProduct[] = [
   { id: "p-croissant-bo", slug: "croissant-bo", name: "Croissant bơ", description: "Vỏ giòn nhiều lớp, thơm bơ.", category: "croissant", status: "ready", priceVnd: 35000, image: "cubeStack", imagePosition: "center 35%" },
   {
     id: "p-croissant-socola", slug: "croissant-so-co-la", name: "Croissant sô-cô-la",

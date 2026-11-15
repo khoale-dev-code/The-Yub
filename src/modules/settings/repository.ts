@@ -12,6 +12,11 @@ const safeUrl = (v: string | undefined, prefix = "https://") => {
 /** Gia tri ban dau: lay tu .env.local neu co (tuong thich ban cu), khong tu bia */
 function envDefaults(): StoreSettings {
   return {
+    storeName: null,
+    phone: null,
+    openTime: null,
+    closeTime: null,
+    freshBatchTime: null,
     address: process.env.NEXT_PUBLIC_STORE_ADDRESS?.trim() || null,
     mapUrl: safeUrl(process.env.NEXT_PUBLIC_STORE_MAP_URL),
     mapEmbedUrl: safeUrl(process.env.NEXT_PUBLIC_STORE_MAP_EMBED_URL, "https://www.google.com/maps/embed"),
@@ -24,6 +29,11 @@ function envDefaults(): StoreSettings {
 }
 
 interface Row {
+  store_name?: string | null;
+  phone?: string | null;
+  open_time?: string | null;
+  close_time?: string | null;
+  fresh_batch_time?: string | null;
   address?: string | null;
   map_url?: string | null;
   map_embed_url?: string | null;
@@ -36,6 +46,11 @@ interface Row {
 
 function merge(base: StoreSettings, r: Row): StoreSettings {
   return {
+    storeName: r.store_name ?? null,
+    phone: r.phone ?? null,
+    openTime: r.open_time ?? null,
+    closeTime: r.close_time ?? null,
+    freshBatchTime: r.fresh_batch_time ?? null,
     address: r.address ?? base.address,
     mapUrl: r.map_url ?? base.mapUrl,
     mapEmbedUrl: r.map_embed_url ?? base.mapEmbedUrl,
@@ -76,6 +91,11 @@ export const settingsRepository = {
       return;
     }
     const value: Row = {
+      store_name: s.storeName,
+      phone: s.phone,
+      open_time: s.openTime,
+      close_time: s.closeTime,
+      fresh_batch_time: s.freshBatchTime,
       address: s.address,
       map_url: s.mapUrl,
       map_embed_url: s.mapEmbedUrl,

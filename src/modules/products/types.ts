@@ -1,6 +1,7 @@
 import type { ProductImageKey } from "@/lib/images";
 
-export type ProductCategory = "croissant" | "tart" | "cake" | "cookie" | "combo";
+/** Ma danh muc banh (Admin > Danh muc) – vd "croissant", "combo" */
+export type ProductCategory = string;
 
 export type ProductStatus = "ready" | "oven" | "pre" | "out";
 
@@ -11,10 +12,21 @@ export interface ProductVariant {
 }
 
 export interface ProductDetails {
-  /** 3 diem noi bat – khoi "Vi sao ban se thich" */
-  highlights: { title: string; text: string; image: ProductImageKey }[];
+  /** 3 diem noi bat – khoi "Vi sao ban se thich". src (neu co) uu tien hon image */
+  highlights: { title: string; text: string; image?: ProductImageKey; src?: string }[];
   ingredients: string;
   allergens: string;
+}
+
+export type MediaKind = "image" | "video";
+
+/** Anh / video cua mon – thu tu = thu tu hien thi, anh dau tien la anh bia */
+export interface ProductMedia {
+  kind: MediaKind;
+  /** Gia tri luu trong DB: "products/<uuid>.webp" (tai len) hoac "lib:<key>" (anh mau cu cua web) */
+  ref: string;
+  /** URL hien thi (Supabase Storage / /media/... / /images/...) */
+  src: string;
 }
 
 export interface Product {
@@ -30,10 +42,15 @@ export interface Product {
   priceVnd: number;
   /** Gia le khi mua rieng (chi dung cho combo) */
   compareAtVnd?: number;
-  image: ProductImageKey;
-  /** object-position cho anh cover */
+  /** Anh mau cu (truoc khi co tai anh len) – chi dung de doc du lieu cu */
+  image?: ProductImageKey;
+  /** object-position cho anh bia */
   imagePosition?: string;
   gallery?: ProductImageKey[];
+  /** Anh / video da sap xep (tinh tu cot media, hoac tu image + gallery cu) */
+  media: ProductMedia[];
+  /** URL anh bia (anh dau tien trong media) – luon co gia tri, chua co anh thi la anh cho */
+  cover: string;
   /** Quy cach (1 cai / hop 4 / hop 6). Khong co = ban le 1 phan */
   variants?: ProductVariant[];
   details?: ProductDetails;
@@ -41,7 +58,8 @@ export interface Product {
   isActive?: boolean;
 }
 
-export const productCategories: ProductCategory[] = ["croissant", "tart", "cake", "cookie", "combo"];
+/** Nhan trang thai theo gio me banh hien tai (doi trong Admin > Cai dat) */
+export const productStatusLabel = (s: ProductStatus, freshBatchTime: string) => (s === "oven" ? `Ra lò ${freshBatchTime}` : productStatusLabels[s]);
 
 export const productStatusLabels: Record<ProductStatus, string> = {
   ready: "Có sẵn",
@@ -50,15 +68,8 @@ export const productStatusLabels: Record<ProductStatus, string> = {
   out: "Hết hôm nay",
 };
 
-export const categoryLabels: Record<ProductCategory, string> = {
-  croissant: "Croissant",
-  tart: "Tart",
-  cake: "Bánh kem & bánh ngọt",
-  cookie: "Cookie",
-  combo: "Combo",
-};
-
-export type DrinkGroup = "coffee" | "tea" | "other" | "juice";
+/** Ma danh muc do uong (Admin > Danh muc) – vd "coffee", "tea" */
+export type DrinkGroup = string;
 
 export interface Drink {
   id: string;
@@ -76,11 +87,3 @@ export interface Drink {
   soldOut?: boolean;
 }
 
-export const drinkGroups: DrinkGroup[] = ["coffee", "tea", "other", "juice"];
-
-export const drinkGroupLabels: Record<DrinkGroup, string> = {
-  coffee: "Cà phê",
-  tea: "Trà & trái cây",
-  other: "Không cà phê",
-  juice: "Nước ép & sinh tố",
-};

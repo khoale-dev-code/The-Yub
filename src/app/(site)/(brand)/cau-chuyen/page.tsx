@@ -5,12 +5,16 @@ import { ProcessScroller, type ProcessStep } from "@/components/brand/process-sc
 import { ArrowRightIcon } from "@/components/ui/icons";
 import { TornWave } from "@/components/ui/torn-wave";
 import { storyPhotos as P, type StoryPhoto } from "@/lib/story-images";
-import { storeConfig } from "@/lib/store-config";
+import { shortTime, type StoreInfo } from "@/modules/settings/store-info";
+import { getStoreInfo } from "@/modules/settings/store-info-server";
 
-export const metadata: Metadata = {
-  title: "Câu chuyện",
-  description: "Câu chuyện của The Yub – Bakes & More: bánh nướng theo mẻ nhỏ, ra lò 14:30 mỗi chiều, nơi giòn rụm gặp thơm bơ.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const store = await getStoreInfo();
+  return {
+    title: "Câu chuyện",
+    description: `Câu chuyện của ${store.name}: bánh nướng theo mẻ nhỏ, ra lò ${store.freshBatchTime} mỗi chiều, nơi giòn rụm gặp thơm bơ.`,
+  };
+}
 
 /*
  * Noi dung chi dua tren thong tin da co (gio mo cua, me 14:30, dat truoc, nhan tai tiem).
@@ -18,27 +22,25 @@ export const metadata: Metadata = {
  * Moi anh hien DUNG TI LE GOC (component Photo) – khong cat.
  */
 
-const open = storeConfig.openTime.replace(/^0/, "");
-
-const facts = [
-  { value: open, label: "Mở cửa mỗi ngày" },
-  { value: storeConfig.freshBatchTime, label: "Mẻ bánh chiều ra lò" },
+const factsOf = (store: StoreInfo) => [
+  { value: shortTime(store.openTime), label: "Mở cửa mỗi ngày" },
+  { value: store.freshBatchTime, label: "Mẻ bánh chiều ra lò" },
   { value: "1 ngày", label: "Đặt trước bánh kem & hộp quà" },
-  { value: storeConfig.closeTime, label: "Quầy nước đóng cửa" },
+  { value: shortTime(store.closeTime), label: "Quầy nước đóng cửa" },
 ];
 
-const day: { time: string; title: string; text: string; photo: StoryPhoto }[] = [
+const dayOf = (store: StoreInfo): { time: string; title: string; text: string; photo: StoryPhoto }[] => [
   { time: "Tối hôm trước", title: "Ủ bột qua đêm", text: "Những chiếc bánh đã cuộn nghỉ lạnh qua đêm – để sáng mai có vị thơm và ruột mềm dai nhẹ.", photo: P.rawCroissants },
-  { time: open, title: "Mở cửa, bật quầy nước", text: "Khay bánh mẻ sáng lên kệ, cà phê pha khi bạn tới.", photo: P.croissantTray },
+  { time: shortTime(store.openTime), title: "Mở cửa, bật quầy nước", text: "Khay bánh mẻ sáng lên kệ, cà phê pha khi bạn tới.", photo: P.croissantTray },
   { time: "Buổi sáng", title: "Cán, gấp bơ, tạo hình", text: "Bột được cán mỏng, gấp cùng bơ lạnh rồi cuộn bằng tay – đó là nơi những lớp giòn bắt đầu.", photo: P.shapingHands },
-  { time: storeConfig.freshBatchTime, title: "Mẻ chiều ra lò", text: "Khoảnh khắc thơm nhất trong ngày. Đơn đặt trước được để riêng phần ngay lúc này.", photo: P.eggTartsOven },
-  { time: storeConfig.closeTime, title: "Chiếc bánh cuối ngày", text: "Những chiếc bánh cuối cùng rời quầy, bột cho ngày mai đã vào tủ lạnh – và vòng lặp lại bắt đầu.", photo: P.painChocolat },
+  { time: store.freshBatchTime, title: "Mẻ chiều ra lò", text: "Khoảnh khắc thơm nhất trong ngày. Đơn đặt trước được để riêng phần ngay lúc này.", photo: P.eggTartsOven },
+  { time: shortTime(store.closeTime), title: "Chiếc bánh cuối ngày", text: "Những chiếc bánh cuối cùng rời quầy, bột cho ngày mai đã vào tủ lạnh – và vòng lặp lại bắt đầu.", photo: P.painChocolat },
 ];
 
-const process: ProcessStep[] = [
+const processOf = (store: StoreInfo): ProcessStep[] => [
   { n: "01", title: "Cán & gấp bơ", text: "Bột và bơ lạnh được cán, gấp nhiều lần để tạo hàng chục lớp mỏng.", photo: P.cubeStack },
   { n: "02", title: "Tạo hình theo mẻ nhỏ", text: "Mỗi mẻ vừa đủ cho một buổi – không làm sẵn hàng loạt.", photo: P.crossSection },
-  { n: "03", title: "Nướng đến vàng giòn", text: `Mẻ chiều ra lò lúc ${storeConfig.freshBatchTime}: vỏ giòn rụm, ruột rỗng nhẹ và thơm bơ.`, photo: P.choco },
+  { n: "03", title: "Nướng đến vàng giòn", text: `Mẻ chiều ra lò lúc ${store.freshBatchTime}: vỏ giòn rụm, ruột rỗng nhẹ và thơm bơ.`, photo: P.choco },
   { n: "04", title: "Gói hộp mang tặng", text: "Bánh kem, hộp tart nhiều vị được gói sẵn cho những dịp đặc biệt.", photo: P.redBoxCake },
 ];
 
@@ -49,14 +51,14 @@ const gallery: { speed: string; offset: string; items: { photo: StoryPhoto; capt
   { speed: "0.18", offset: "md:pt-10", items: [{ photo: P.peachToast, caption: "Trái cây mùa trên lát bánh" }, { photo: P.swirlBreakfast, caption: "Bữa sáng chậm" }] },
 ];
 
-const values = [
-  { title: "Ra lò mỗi chiều", text: `Mẻ bánh mới lúc ${storeConfig.freshBatchTime}. Đặt trước để giữ phần cho mình.`, icon: <><path d="M10 46c0-10 10-16 22-16s22 6 22 16c0 3-2 5-5 5H15c-3 0-5-2-5-5z" /><path d="M24 30c2 4 2 8 0 12M32 30c2 4 2 8 0 12M40 30c2 4 2 8 0 12" /><path d="M26 22c-2-3 2-5 0-9M33 22c-2-3 2-5 0-9M40 22c-2-3 2-5 0-9" /></> },
+const valuesOf = (store: StoreInfo) => [
+  { title: "Ra lò mỗi chiều", text: `Mẻ bánh mới lúc ${store.freshBatchTime}. Đặt trước để giữ phần cho mình.`, icon: <><path d="M10 46c0-10 10-16 22-16s22 6 22 16c0 3-2 5-5 5H15c-3 0-5-2-5-5z" /><path d="M24 30c2 4 2 8 0 12M32 30c2 4 2 8 0 12M40 30c2 4 2 8 0 12" /><path d="M26 22c-2-3 2-5 0-9M33 22c-2-3 2-5 0-9M40 22c-2-3 2-5 0-9" /></> },
   { title: "Mẻ nhỏ, làm tay", text: "Từng mẻ bột được cán, gấp và tạo hình trong bếp của tiệm.", icon: <><path d="M32 58V12" /><path d="M32 20c-6-2-9-7-8-12 6 1 9 6 8 12zM32 20c6-2 9-7 8-12-6 1-9 6-8 12zM32 32c-6-2-9-7-8-12 6 1 9 6 8 12zM32 32c6-2 9-7 8-12-6 1-9 6-8 12zM32 44c-6-2-9-7-8-12 6 1 9 6 8 12zM32 44c6-2 9-7 8-12-6 1-9 6-8 12z" /></> },
   { title: "Hẹn giờ, ghé lấy", text: "Chọn khung giờ nhận online, tiệm gọi xác nhận rồi mới chuẩn bị.", icon: <><circle cx="32" cy="34" r="22" /><path d="M32 20v14l9 6" /><path d="M26 6h12M32 6v6" /></> },
 ];
 
-
-export default function CauChuyenPage() {
+export default async function CauChuyenPage() {
+  const store = await getStoreInfo();
   return (
     <>
       {/* HERO – 2 ảnh dạng "ảnh in", hiển thị đủ khung */}
@@ -68,7 +70,7 @@ export default function CauChuyenPage() {
           <h1 className="m-0 text-balance font-display text-[46px] font-semibold leading-[0.98] tracking-[-0.025em] md:text-[clamp(60px,6.6vw,104px)]">Một mẻ bánh nhỏ, mỗi chiều.</h1>
           <p className="m-0 max-w-[520px] text-[17px] text-muted md:text-lg">
             The Yub là tiệm bánh và quầy nước nhỏ. Chúng mình nướng theo mẻ, để mỗi chiếc bánh đến tay bạn còn giòn, còn thơm bơ – đúng như câu chúng mình vẫn nói:{" "}
-            <em className="font-display not-italic text-accent">{storeConfig.slogan.toLowerCase()}</em>.
+            <em className="font-display not-italic text-accent">{store.slogan.toLowerCase()}</em>.
           </p>
           <div className="flex flex-wrap gap-3">
             <Link href="/thuc-don" className="inline-flex min-h-[52px] items-center gap-2 rounded-full bg-maroon px-6 font-semibold text-cream no-underline hover:bg-accent hover:text-cream">Xem bánh hôm nay <ArrowRightIcon /></Link>
@@ -80,7 +82,7 @@ export default function CauChuyenPage() {
             <Photo photo={P.peachToast} sizes="(min-width: 768px) 460px, 85vw" priority reveal={false} rounded="rounded-[28px]" className="rotate-[1.5deg] rounded-[30px] bg-card p-2.5 shadow-[0_30px_60px_-24px_rgba(59,15,18,0.45)]" />
             <span className="absolute -right-3 top-8 flex rotate-4 flex-col rounded-2xl bg-card px-4 py-3 leading-tight text-maroon shadow-[0_14px_30px_rgba(36,18,13,0.18)] md:-right-6">
               <span className="text-xs font-semibold text-muted">Mẻ chiều nay</span>
-              <strong className="font-display text-2xl font-semibold">{storeConfig.freshBatchTime}</strong>
+              <strong className="font-display text-2xl font-semibold">{store.freshBatchTime}</strong>
             </span>
           </div>
           <div data-parallax="0.3" className="absolute bottom-0 left-0 w-[46%]">
@@ -93,7 +95,7 @@ export default function CauChuyenPage() {
       {/* Con số thật */}
       <section className="mx-auto max-w-[1200px] px-5 pb-24 md:px-6 md:pb-32">
         <dl data-reveal-stagger className="m-0 grid grid-cols-2 gap-px overflow-hidden rounded-[26px] border border-maroon/12 bg-maroon/12 md:grid-cols-4">
-          {facts.map((f) => (
+          {factsOf(store).map((f) => (
             <div key={f.label} className="flex flex-col gap-1 bg-card px-5 py-6 md:px-7 md:py-8">
               <dt className="order-2 text-sm text-muted">{f.label}</dt>
               <dd className="order-1 m-0 font-display text-[34px] font-semibold leading-none md:text-[44px]">{f.value}</dd>
@@ -106,7 +108,7 @@ export default function CauChuyenPage() {
       <section data-no-reveal className="relative bg-maroon text-cream">
         <TornWave fill="#3B0F12" mirror className="absolute -top-[47px] left-0" />
         <div className="mx-auto flex max-w-[980px] flex-col items-center gap-6 px-5 py-28 text-center md:px-6 md:py-36">
-          <p data-split className="m-0 text-balance font-display text-[40px] font-semibold leading-[1.08] tracking-[-0.02em] md:text-[clamp(52px,6vw,88px)]">“{storeConfig.slogan}.”</p>
+          <p data-split className="m-0 text-balance font-display text-[40px] font-semibold leading-[1.08] tracking-[-0.02em] md:text-[clamp(52px,6vw,88px)]">“{store.slogan}.”</p>
           <p data-reveal className="m-0 max-w-[620px] text-[17px] text-cream/80">Giòn rụm là lớp vỏ vàng nứt nhẹ khi bạn bẻ đôi. Thơm bơ là mùi hương lan ra khi khay bánh vừa rời lò. Mọi thứ ở tiệm – từ giờ ra lò đến cách đặt trước – đều để hai điều đó gặp nhau đúng lúc bạn tới.</p>
         </div>
         <TornWave fill="#FBF3E3" className="absolute -bottom-px left-0" />
@@ -118,7 +120,7 @@ export default function CauChuyenPage() {
         <ol className="relative m-0 list-none p-0">
           <span aria-hidden="true" className="absolute bottom-6 left-[19px] top-6 w-[2px] bg-maroon/12 md:left-1/2 md:-translate-x-1/2" />
           <span aria-hidden="true" data-scrub-line className="absolute bottom-6 left-[19px] top-6 w-[2px] bg-butter md:left-1/2 md:-translate-x-1/2" />
-          {day.map((d, i) => {
+          {dayOf(store).map((d, i) => {
             const left = i % 2 === 0;
             return (
               <li key={d.title} className="relative grid grid-cols-[40px_minmax(0,1fr)] gap-x-5 gap-y-5 pb-16 last:pb-0 md:grid-cols-[minmax(0,1fr)_40px_minmax(0,1fr)] md:items-center md:gap-x-12 md:pb-24">
@@ -150,7 +152,7 @@ export default function CauChuyenPage() {
       {/* Từ bột đến hộp quà – sticky storytelling */}
       <section data-no-reveal className="relative bg-maroon pb-28 pt-24 text-cream md:pb-36 md:pt-32">
         <TornWave fill="#3B0F12" mirror className="absolute -top-[47px] left-0" />
-        <ProcessScroller steps={process} />
+        <ProcessScroller steps={processOf(store)} />
         <TornWave fill="#FBF3E3" className="absolute -bottom-px left-0" />
       </section>
 
@@ -175,7 +177,7 @@ export default function CauChuyenPage() {
       <section className="mx-auto flex max-w-[1100px] flex-col items-center gap-12 px-5 py-24 text-center md:gap-14 md:px-6 md:py-32">
         <h2 className="m-0 text-balance font-display text-[34px] font-semibold leading-[1.12] tracking-[-0.01em] md:text-[clamp(40px,4.4vw,56px)]">Đơn giản. Tử tế. Mỗi ngày.</h2>
         <div data-reveal-stagger className="grid w-full grid-cols-1 gap-6 md:grid-cols-3">
-          {values.map((v) => (
+          {valuesOf(store).map((v) => (
             <div key={v.title} className="flex flex-col items-center gap-3 rounded-[26px] bg-beige px-6 py-10">
               <svg width="64" height="64" viewBox="0 0 64 64" fill="none" stroke="#3B0F12" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{v.icon}</svg>
               <h3 className="m-0 text-lg font-bold">{v.title}</h3>

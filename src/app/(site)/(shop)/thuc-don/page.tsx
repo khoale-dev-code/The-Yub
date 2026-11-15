@@ -7,15 +7,20 @@ import { ArrowRightIcon } from "@/components/ui/icons";
 import { formatVnd } from "@/lib/format";
 import { productImages } from "@/lib/images";
 import { productsRepository } from "@/modules/products/repository";
-import { categoryLabels, type Product, type ProductCategory } from "@/modules/products/types";
+import type { Product } from "@/modules/products/types";
+import { getStoreInfo } from "@/modules/settings/store-info-server";
+import { categoriesRepository } from "@/modules/categories/repository";
 
-export const metadata: Metadata = {
-  title: "Thực đơn bánh",
-  description: "Croissant, tart, bánh kem ra lò lúc 14:30. Chọn món, hẹn giờ ghé lấy khi bánh còn ấm.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const store = await getStoreInfo();
+  return {
+    title: "Thực đơn bánh",
+    description: `Croissant, tart, bánh kem ra lò lúc ${store.freshBatchTime}. Chọn món, hẹn giờ ghé lấy khi bánh còn ấm.`,
+  };
+}
 
-const features: { label: [string, string]; icon: React.ReactNode }[] = [
-  { label: ["Ra lò 14:30", "mỗi chiều"], icon: <><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></> },
+const featuresOf = (fresh: string): { label: [string, string]; icon: React.ReactNode }[] => [
+  { label: [`Ra lò ${fresh}`, "mỗi chiều"], icon: <><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></> },
   { label: ["Nướng", "mẻ nhỏ"], icon: <path d="M12 21c-3.6 0-6-2.4-6-5.6 0-3.4 3-5 3.6-8.4 2 1.4 2.4 3.4 2.4 4.6.9-.8 1.5-2 1.6-3.4 2.4 1.8 4.4 4.4 4.4 7.2 0 3.2-2.4 5.6-6 5.6z" /> },
   { label: ["Bột ủ", "qua đêm"], icon: <path d="M19 14.5A7.5 7.5 0 0 1 9.5 5a7.5 7.5 0 1 0 9.5 9.5z" /> },
   { label: ["Đặt trước", "online"], icon: <><rect x="4" y="5.5" width="16" height="14.5" rx="2.5" /><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4" /></> },
@@ -31,10 +36,11 @@ const favorites: { slug: string; tag: string; tint: string }[] = [
 ];
 
 export default async function ThucDonPage({ searchParams }: { searchParams: Promise<{ q?: string | string[]; loai?: string | string[] }> }) {
+  const store = await getStoreInfo();
   const { q, loai } = await searchParams;
   const query = typeof q === "string" ? q.slice(0, 60) : "";
-  const initialCategory = typeof loai === "string" && loai in categoryLabels ? (loai as ProductCategory) : "all";
-  const products = await productsRepository.list();
+  const [products, categories] = await Promise.all([productsRepository.list(), categoriesRepository.list("product")]);
+  const initialCategory = typeof loai === "string" && categories.some((c) => c.slug === loai) ? loai : "all";
   const find = (slug: string) => products.find((p) => p.slug === slug);
   const raspberry = find("croissant-mam-xoi");
   const giftBox = find("hop-tart-7-vi");
@@ -50,7 +56,7 @@ export default async function ThucDonPage({ searchParams }: { searchParams: Prom
               <Link href="/" className="text-muted">Trang chủ</Link> <span aria-hidden="true">/</span> Thực đơn bánh
             </nav>
             <h1 className="m-0 text-balance font-display text-[38px] font-semibold leading-[1.02] tracking-[-0.02em] md:text-[clamp(52px,5.6vw,80px)]">Bánh nướng mỗi chiều</h1>
-            <p className="m-0 max-w-[420px] text-muted md:text-lg">Croissant, tart, bánh kem ra lò lúc 14:30. Chọn món, hẹn giờ ghé lấy khi bánh còn ấm.</p>
+            <p className="m-0 max-w-[420px] text-muted md:text-lg">Croissant, tart, bánh kem ra lò lúc {store.freshBatchTime}. Chọn món, hẹn giờ ghé lấy khi bánh còn ấm.</p>
             <div className="mt-1 grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:gap-3 md:mt-1.5">
               <a href="#danh-sach" className="inline-flex min-h-[50px] items-center justify-center gap-2 rounded-full bg-maroon px-[26px] font-semibold text-cream no-underline hover:bg-accent hover:text-cream md:min-h-[54px]">
                 <span className="sm:hidden">Xem tất cả</span><span className="hidden sm:inline">Xem tất cả bánh</span> <ArrowRightIcon className="hidden sm:block" />
@@ -62,12 +68,12 @@ export default async function ThucDonPage({ searchParams }: { searchParams: Prom
             <Image src={productImages.choco} alt="Croissant sô-cô-la vừa ra lò" fill priority sizes="(min-width: 768px) 640px, 100vw" className="object-cover" style={{ objectPosition: "center 45%" }} />
             <div className="absolute right-3.5 top-3.5 flex rotate-4 flex-col rounded-xl bg-butter px-3 py-[7px] leading-[1.2] text-maroon shadow-[0_12px_24px_rgba(36,18,13,0.25)] md:right-7 md:top-7 md:rounded-2xl md:px-[18px] md:py-3">
               <span className="text-[11px] font-semibold md:text-[13px]">Mẻ chiều nay</span>
-              <strong className="font-display text-[19px] font-semibold md:text-[26px]">14:30</strong>
+              <strong className="font-display text-[19px] font-semibold md:text-[26px]">{store.freshBatchTime}</strong>
             </div>
             {raspberry && (
               <Link href={`/san-pham/${raspberry.slug}`} className="absolute bottom-7 left-7 hidden items-center gap-3 rounded-full bg-card py-2 pl-2 pr-[18px] no-underline shadow-[0_12px_24px_rgba(36,18,13,0.2)] md:flex">
                 <span className="relative h-[52px] w-[52px] overflow-hidden rounded-full">
-                  <Image src={productImages[raspberry.image]} alt="" fill sizes="52px" className="object-cover" />
+                  <Image src={raspberry.cover} alt="" fill sizes="52px" className="object-cover" />
                 </span>
                 <span className="flex flex-col leading-[1.25]">
                   <strong className="text-[15px]">{raspberry.name}</strong>
@@ -82,7 +88,7 @@ export default async function ThucDonPage({ searchParams }: { searchParams: Prom
       {/* Hàng cam kết */}
       <section className="mx-auto max-w-[1200px] px-4 pb-2 pt-8 sm:px-6 md:pt-10">
         <ul className="m-0 grid list-none grid-cols-3 gap-y-6 p-0 lg:grid-cols-6">
-          {features.map((f, i) => (
+          {featuresOf(store.freshBatchTime).map((f, i) => (
             <li key={f.label.join(" ")} className={`flex flex-col items-center gap-2.5 border-maroon/15 px-2 py-1 text-center sm:px-3 ${i % 3 !== 0 ? "border-l" : ""} ${i === 3 ? "lg:border-l" : ""}`}>
               <span aria-hidden="true" className="flex h-12 w-12 items-center justify-center rounded-full bg-maroon text-cream sm:h-14 sm:w-14">
                 <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">{f.icon}</svg>
@@ -104,7 +110,7 @@ export default async function ThucDonPage({ searchParams }: { searchParams: Prom
             {favs.map(({ product: p, tag, tint }) => (
               <article key={p.id} className="flex w-[72%] flex-none snap-start flex-col overflow-hidden rounded-[22px] bg-card shadow-[0_14px_30px_-22px_rgba(59,15,18,0.5)] sm:w-[44%] md:w-auto">
                 <Link href={`/san-pham/${p.slug}`} aria-label={`Xem ${p.name}`} className="group relative block aspect-[1/0.92] overflow-hidden" style={{ background: tint }}>
-                  <Image src={productImages[p.image]} alt={p.name} fill sizes="(min-width: 768px) 280px, 72vw" className="object-cover transition-transform duration-500 group-hover:scale-[1.03]" style={{ objectPosition: p.imagePosition ?? "center" }} />
+                  <Image src={p.cover} alt={p.name} fill sizes="(min-width: 768px) 280px, 72vw" className="object-cover transition-transform duration-500 group-hover:scale-[1.03]" style={{ objectPosition: p.imagePosition ?? "center" }} />
                   <span className="absolute left-3 top-3 rounded-full bg-card px-3 py-1 text-xs font-bold text-maroon">{tag}</span>
                 </Link>
                 <div className="flex grow flex-col gap-0.5 px-4 pb-[18px] pt-4">
@@ -121,7 +127,7 @@ export default async function ThucDonPage({ searchParams }: { searchParams: Prom
         </div>
       </section>
 
-      <CatalogBrowser products={products} initialQuery={query} initialCategory={initialCategory} />
+      <CatalogBrowser products={products} categories={categories} initialQuery={query} initialCategory={initialCategory} />
 
       {/* Nguyên liệu */}
       <section className="mx-auto grid max-w-[1200px] items-center gap-8 px-4 pb-20 pt-6 sm:px-6 md:grid-cols-[minmax(0,0.9fr)_minmax(0,2fr)] md:gap-14 md:pb-24">

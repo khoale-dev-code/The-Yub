@@ -3,16 +3,18 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { formatVnd } from "@/lib/format";
-import { productImages, type ProductImageKey } from "@/lib/images";
 import { saveProductAction } from "@/modules/admin/actions";
-import { categoryLabels, productCategories, productStatusLabels, type Product, type ProductCategory, type ProductStatus } from "@/modules/products/types";
+import type { Category } from "@/modules/categories/types";
+import { productStatusLabel, type Product, type ProductCategory, type ProductStatus } from "@/modules/products/types";
 import { PlusIcon, TrashIcon } from "./admin-icons";
 import { DeleteButton } from "./delete-button";
+import { MediaManager, toItems, type MediaItem } from "./media-manager";
 import { Switch } from "./switch";
 import { toast } from "./toast";
 import { btn, card, input, label, productStatusTone } from "./ui";
+import { useStoreInfo } from "@/components/brand/store-info-context";
 
 const POSITIONS = [
   { v: "center 30%", l: "Trên" },
@@ -32,6 +34,9 @@ export const toSlug = (s: string) =>
     .replace(/^-+|-+$/g, "")
     .slice(0, 80);
 
+/** Anh cho khi mon chua co anh (giong tren web) */
+const PLACEHOLDER = "/images/brand/placeholder-product.png";
+
 const parsePrice = (s: string) => Number(s.replace(/\D/g, "") || "0");
 const showPrice = (n: number) => (n ? n.toLocaleString("vi-VN") : "");
 
@@ -42,20 +47,21 @@ interface VariantRow {
   price: number;
 }
 
-export function ProductForm({ product, canDelete = false }: { product: Product | null; canDelete?: boolean }) {
+export function ProductForm({ product, categories, canDelete = false }: { product: Product | null; categories: Category[]; canDelete?: boolean }) {
+  const store = useStoreInfo();
   const router = useRouter();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState(product?.name ?? "");
   const [slug, setSlug] = useState(product?.slug ?? "");
   const [slugTouched, setSlugTouched] = useState(Boolean(product));
-  const [category, setCategory] = useState<ProductCategory>(product?.category ?? "croissant");
+  const [category, setCategory] = useState<ProductCategory>(product?.category ?? categories[0]?.slug ?? "");
   const [tagline, setTagline] = useState(product?.tagline ?? "");
   const [description, setDescription] = useState(product?.description ?? "");
   const [price, setPrice] = useState(product?.priceVnd ?? 0);
   const [compareAt, setCompareAt] = useState(product?.compareAtVnd ?? 0);
   const [status, setStatus] = useState<ProductStatus>(product?.status ?? "ready");
-  const [image, setImage] = useState<ProductImageKey>(product?.image ?? "cubeStack");
+  const [media, setMedia] = useState<MediaItem[]>(() => toItems(product?.media ?? []));
   const [position, setPosition] = useState<string>(product?.imagePosition ?? "center");
   const [isActive, setIsActive] = useState(product?.isActive !== false);
   const [variants, setVariants] = useState<VariantRow[]>(
@@ -64,12 +70,16 @@ export function ProductForm({ product, canDelete = false }: { product: Product |
 
   const finalSlug = slugTouched ? slug : toSlug(name);
   const shownPrice = variants[0]?.price ?? price;
-  const imageKeys = useMemo(() => Object.keys(productImages) as ProductImageKey[], []);
+  const coverItem = media.find((m) => m.kind === "image" && m.status !== "error");
 
   const addVariant = () => setVariants((v) => [...v, { key: crypto.randomUUID(), id: "", label: "", price: 0 }]);
 
   const submit = () => {
     setError(null);
+    if (media.some((m) => m.status === "uploading")) {
+      setError("Ảnh / video đang tải lên – đợi xong rồi lưu.");
+      return;
+    }
     const used = new Set<string>();
     const vs = variants
       .filter((v) => v.label.trim())
@@ -90,7 +100,7 @@ export function ProductForm({ product, canDelete = false }: { product: Product |
         priceVnd: vs[0]?.priceVnd ?? price,
         compareAtVnd: compareAt || null,
         status,
-        image,
+        media: media.filter((m) => m.status === "done" && m.ref).map((m) => m.ref as string),
         imagePosition: position === "center" ? null : position,
         isActive,
         variants: vs,
@@ -100,6 +110,8 @@ export function ProductForm({ product, canDelete = false }: { product: Product |
         toast(res.error, "error");
         return;
       }
+      // Da luu: file moi khong con la "vua tai" (bo sau nay se xoa khi bam Luu)
+      setMedia((list) => list.filter((m) => m.status === "done").map((m) => ({ ...m, fresh: false })));
       toast(product ? "Đã lưu thay đổi – web đã cập nhật" : "Đã thêm món mới");
       if (!product && res.id) router.replace(`/admin/mon/${encodeURIComponent(res.id)}`);
       else router.refresh();
@@ -123,10 +135,10 @@ export function ProductForm({ product, canDelete = false }: { product: Product |
           </label>
           <div className="grid gap-4 sm:grid-cols-2">
             <label className={label}>
-              Loại
+              <span className="flex items-center justify-between gap-2">Danh mục <Link href="/admin/danh-muc" className="text-[12px] font-semibold text-muted underline-offset-2 hover:underline">Sửa danh mục</Link></span>
               <select value={category} onChange={(e) => setCategory(e.target.value as ProductCategory)} className={input}>
-                {productCategories.map((c) => (
-                  <option key={c} value={c}>{categoryLabels[c]}</option>
+                {categories.map((c) => (
+                  <option key={c.slug} value={c.slug}>{c.name}</option>
                 ))}
               </select>
             </label>
@@ -178,23 +190,18 @@ export function ProductForm({ product, canDelete = false }: { product: Product |
         </section>
 
         <section className={`${card} flex flex-col gap-4 p-4 md:p-6`}>
-          <h2 className="m-0 font-display text-[20px] font-semibold">Ảnh</h2>
-          <div role="radiogroup" aria-label="Chọn ảnh" className="grid grid-cols-4 gap-2 sm:grid-cols-6 lg:grid-cols-7">
-            {imageKeys.map((k) => (
-              <button key={k} type="button" role="radio" aria-checked={image === k} aria-label={k} onClick={() => setImage(k)} className={`relative aspect-square overflow-hidden rounded-[14px] border-0 p-0 ring-offset-2 ring-offset-card ${image === k ? "ring-[3px] ring-maroon" : "opacity-80 hover:opacity-100"}`}>
-                <Image src={productImages[k]} alt="" fill sizes="96px" className="object-cover" />
-              </button>
-            ))}
-          </div>
-          <div className="flex flex-col gap-2">
-            <span className="text-[14px] font-semibold">Phần ảnh hiển thị</span>
-            <div className="flex flex-wrap gap-1.5">
-              {POSITIONS.map((p) => (
-                <button key={p.v} type="button" aria-pressed={position === p.v} onClick={() => setPosition(p.v)} className={`min-h-9 rounded-full border px-3 text-[13px] font-semibold ${position === p.v ? "border-maroon bg-maroon text-cream" : "border-maroon/20 bg-card text-maroon"}`}>{p.l}</button>
-              ))}
+          <h2 className="m-0 font-display text-[20px] font-semibold">Ảnh & video</h2>
+          <MediaManager items={media} onChange={setMedia} />
+          {coverItem && (
+            <div className="flex flex-col gap-2 border-t border-maroon/8 pt-3">
+              <span className="text-[14px] font-semibold">Phần ảnh bìa hiển thị trên thẻ bánh</span>
+              <div className="flex flex-wrap gap-1.5">
+                {POSITIONS.map((p) => (
+                  <button key={p.v} type="button" aria-pressed={position === p.v} onClick={() => setPosition(p.v)} className={`min-h-9 rounded-full border px-3 text-[13px] font-semibold ${position === p.v ? "border-maroon bg-maroon text-cream" : "border-maroon/20 bg-card text-maroon"}`}>{p.l}</button>
+                ))}
+              </div>
             </div>
-          </div>
-          <p className="m-0 text-[13px] text-muted">Ảnh lấy từ thư viện ảnh của web (public/images/products). Thay ảnh thật của tiệm bằng cách thay file cùng tên.</p>
+          )}
         </section>
       </div>
 
@@ -205,7 +212,7 @@ export function ProductForm({ product, canDelete = false }: { product: Product |
           <div role="radiogroup" aria-label="Trạng thái" className="grid grid-cols-2 gap-1.5">
             {(["ready", "oven", "pre", "out"] as const).map((s) => (
               <button key={s} type="button" role="radio" aria-checked={status === s} onClick={() => setStatus(s)} className={`min-h-10 rounded-[12px] border px-2 text-[13px] font-semibold ${status === s ? `${productStatusTone[s]} border-transparent` : "border-maroon/15 bg-card text-muted"}`}>
-                {productStatusLabels[s]}
+                {productStatusLabel(s, store.freshBatchTime)}
               </button>
             ))}
           </div>
@@ -217,8 +224,13 @@ export function ProductForm({ product, canDelete = false }: { product: Product |
 
         <section className={`${card} overflow-hidden`} aria-label="Xem trước thẻ bánh">
           <div className="relative aspect-[4/3] bg-beige">
-            <Image src={productImages[image]} alt="" fill sizes="320px" className="object-cover" style={{ objectPosition: position }} />
-            <span className={`absolute left-3 top-3 rounded-full px-2.5 py-1 text-xs font-semibold ${productStatusTone[status]}`}>{productStatusLabels[status]}</span>
+            {coverItem?.src.startsWith("blob:") ? (
+              // eslint-disable-next-line @next/next/no-img-element -- anh dang tai len (xem truoc tam)
+              <img src={coverItem.src} alt="" className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: position }} />
+            ) : (
+              <Image src={coverItem?.src ?? PLACEHOLDER} alt="" fill sizes="320px" className="object-cover" style={{ objectPosition: position }} />
+            )}
+            <span className={`absolute left-3 top-3 rounded-full px-2.5 py-1 text-xs font-semibold ${productStatusTone[status]}`}>{productStatusLabel(status, store.freshBatchTime)}</span>
           </div>
           <div className="flex flex-col gap-1 p-4">
             <strong className="font-display text-[18px] font-semibold">{name || "Tên món"}</strong>

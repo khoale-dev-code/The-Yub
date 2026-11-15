@@ -162,3 +162,14 @@ html.yub-reduced-motion *::after {
     transform: translateX(200%);
   }
 }
+
+@keyframes yub-price-in {
+  from {
+    transform: translateY(70%);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}

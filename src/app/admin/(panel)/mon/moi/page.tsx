@@ -4,6 +4,7 @@ import { ChevronLeftIcon } from "@/components/admin/admin-icons";
 import { ProductForm } from "@/components/admin/product-form";
 import { PageHeader } from "@/components/admin/ui";
 import { requireAdmin } from "@/modules/admin/session";
+import { categoriesRepository } from "@/modules/categories/repository";
 
 export const metadata: Metadata = { title: "Thêm món" };
 
@@ -16,7 +17,7 @@ export default async function AdminProductNewPage() {
         title="Thêm món mới"
         description="Giá do tiệm tự nhập – web chỉ hiển thị, đơn hàng luôn tính lại giá ở máy chủ."
       />
-      <ProductForm product={null} />
+      <ProductForm product={null} categories={await categoriesRepository.listFresh("product")} />
     </>
   );
 }

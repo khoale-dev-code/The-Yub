@@ -28,8 +28,8 @@ Giao diện: máy tính có thanh menu bên trái; điện thoại / máy tính 
 ## Cài đặt Supabase (một lần)
 
 1. Tạo project tại https://supabase.com.
-2. **SQL Editor** → chạy lần lượt: `supabase/migrations/0001_init.sql`, `0002_variants_inquiries.sql`, `0003_admin.sql`, `0004_drinks.sql`, `0005_admin_crud.sql`, rồi `supabase/seed.sql`.
-   (Đã chạy tới 0004 từ trước: chỉ cần chạy thêm `0005_admin_crud.sql` – cần cho Sửa / Xoá đơn.)
+2. **SQL Editor** → chạy lần lượt: `supabase/migrations/0001_init.sql`, `0002_variants_inquiries.sql`, `0003_admin.sql`, `0004_drinks.sql`, `0005_admin_crud.sql`, `0006_product_media.sql`, `0007_categories.sql`, rồi `supabase/seed.sql`.
+   (Đã chạy tới 0006 từ trước: chỉ cần chạy thêm `0007_categories.sql` – danh mục bánh / đồ uống tự quản lý.)
    Khi tạo project nên chọn region **Southeast Asia (Singapore)** cho nhanh hơn khi dùng ở Việt Nam.
 3. **Project Settings → API** → chép vào `.env.local`:
    ```
@@ -56,6 +56,23 @@ SQL Editor → chạy `supabase/test-data/du-lieu-mau.sql`: ~70 đơn mẫu (30 
 
 Thêm vào `.env.local`: `ADMIN_DEMO_PASSWORD=<ít nhất 12 ký tự>` rồi `npm run dev`. Đăng nhập bằng mật khẩu đó.
 Dữ liệu chỉ lưu tạm trong bộ nhớ (mất khi tắt server). Chế độ này **không chạy** với `npm run build` / `npm start`.
+
+## Danh mục
+
+- Admin → **Danh mục**: 2 tab *Bánh* và *Đồ uống*. Thêm danh mục mới, đổi tên, đưa lên / xuống để đổi thứ tự hiển thị trên web.
+- Chọn danh mục cho món trong form món (Admin → Món bánh) và cho đồ uống trong Admin → Đồ uống.
+- Danh mục chưa có món không hiện cho khách. Chỉ chủ tiệm xoá được, và chỉ khi danh mục trống (chuyển món sang danh mục khác trước).
+- Danh mục *Combo* có thêm ô “Giá lẻ khi mua riêng”.
+
+## Ảnh & video của món
+
+- Admin → Món bánh → mở món → **Ảnh & video**: *Chọn ảnh / video từ máy* (chọn nhiều file) hoặc kéo thả. Tối đa 12 file mỗi món.
+- Ảnh JPG / PNG / WebP / AVIF: trình duyệt tự thu nhỏ (cạnh dài 1800px, WebP) trước khi tải – ảnh điện thoại 10–20 MB vẫn nhận.
+- Video MP4 / WebM / MOV: **dưới 7 MB** (không tự nén). Video dài hơn: cắt ngắn hoặc nén trước khi tải.
+- Ảnh đầu tiên là **ảnh bìa** (thẻ bánh, giỏ hàng). Đổi thứ tự bằng mũi tên / kéo thả, hoặc bấm “Đặt làm ảnh bìa”. Bấm **Lưu thay đổi** mới áp dụng lên web.
+- Có Supabase: file nằm ở bucket `product-media` (tạo bởi migration 0006, Supabase tự chặn file > 7 MB và loại file khác). Trình duyệt tải thẳng lên Supabase bằng đường dẫn có chữ ký – không qua server web (Vercel giới hạn 4,5 MB/request).
+- Chưa có Supabase (chạy thử): file lưu ở thư mục `.data/uploads` trong dự án (không đưa lên git).
+- Bỏ ảnh / video rồi Lưu: file bị xoá khỏi kho. Món chưa có ảnh hiện ảnh chờ có logo tiệm.
 
 ## Tốc độ
 

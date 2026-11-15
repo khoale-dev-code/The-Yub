@@ -4,9 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, useTransition, type FormEvent } from "react";
 import { formatVnd } from "@/lib/format";
-import { productImages } from "@/lib/images";
 import { PICKUP_DATE_COUNT, formatPickupDate, getPickupDateOptions, pickupSlotLabel, pickupSlots, type PickupDateOption } from "@/lib/pickup";
-import { storeConfig } from "@/lib/store-config";
+import { useStoreInfo } from "@/components/brand/store-info-context";
 import { lineKey, useCart } from "@/modules/cart/cart-context";
 import { createOrderAction } from "@/modules/orders/actions";
 import { customerSchema } from "@/modules/orders/schema";
@@ -14,6 +13,7 @@ import { paymentHints, paymentLabels, type OrderReceipt, type PaymentMethod } fr
 import { unitPriceOf, variantLabelOf } from "@/modules/products/pricing";
 import type { Product } from "@/modules/products/types";
 import { ArrowLeftIcon, ArrowRightIcon, CheckIcon } from "../ui/icons";
+import { isFreshSlot } from "@/lib/pickup";
 
 const STEPS = ["Giỏ hàng", "Thông tin nhận", "Xác nhận"] as const;
 export type CheckoutStep = 1 | 2 | 3;
@@ -35,6 +35,7 @@ interface CartCheckoutProps {
 }
 
 export function CartCheckout({ products, initialStep = 1 }: CartCheckoutProps) {
+  const store = useStoreInfo();
   const cart = useCart();
   const [step, setStep] = useState<Step>(initialStep);
   const [dates, setDates] = useState<PickupDateOption[]>([]);
@@ -176,7 +177,7 @@ export function CartCheckout({ products, initialStep = 1 }: CartCheckoutProps) {
                   {empty ? (
                     <div className="flex flex-col items-start gap-3 rounded-3xl border border-dashed border-maroon/30 bg-card px-6 py-12 sm:px-8">
                       <h2 className="m-0 font-display text-[26px] font-semibold">Giỏ hàng đang trống</h2>
-                      <p className="m-0 text-muted">Bánh chiều nay ra lò lúc {storeConfig.freshBatchTime} – chọn vài món để giữ phần nhé.</p>
+                      <p className="m-0 text-muted">Bánh chiều nay ra lò lúc {store.freshBatchTime} – chọn vài món để giữ phần nhé.</p>
                       <Link href="/thuc-don" className="inline-flex min-h-[50px] items-center rounded-full bg-maroon px-6 font-semibold text-cream no-underline hover:bg-accent hover:text-cream">Xem thực đơn</Link>
                     </div>
                   ) : (
@@ -184,13 +185,13 @@ export function CartCheckout({ products, initialStep = 1 }: CartCheckoutProps) {
                       {rows.map((r) => (
                         <li key={r.key} className="grid grid-cols-[80px_minmax(0,1fr)] items-center gap-x-4 gap-y-3 border-b border-maroon/15 py-5 sm:grid-cols-[112px_minmax(0,1fr)_auto_auto] sm:gap-6">
                           <Link href={`/san-pham/${r.product.slug}`} aria-label={`Xem ${r.product.name}`} className="relative row-span-2 block h-20 w-20 overflow-hidden rounded-[18px] bg-beige sm:row-span-1 sm:h-28 sm:w-28">
-                            <Image src={productImages[r.product.image]} alt="" fill sizes="112px" className="object-cover" style={{ objectPosition: r.product.imagePosition ?? "center" }} />
+                            <Image src={r.product.cover} alt="" fill sizes="112px" className="object-cover" style={{ objectPosition: r.product.imagePosition ?? "center" }} />
                           </Link>
                           <div className="flex min-w-0 flex-col gap-1">
                             <Link href={`/san-pham/${r.product.slug}`} className="no-underline">
                               <h3 className="m-0 font-display text-lg font-semibold sm:text-xl">{r.product.name}</h3>
                             </Link>
-                            <span className={`text-sm ${r.product.status === "out" ? "font-semibold text-accent" : "text-muted"}`}>{[r.variant, statusNote[r.product.status]].filter(Boolean).join(" · ")}</span>
+                            <span className={`text-sm ${r.product.status === "out" ? "font-semibold text-accent" : "text-muted"}`}>{[r.variant, (r.product.status === "oven" ? `Ra lò ${store.freshBatchTime}` : statusNote[r.product.status])].filter(Boolean).join(" · ")}</span>
                             <span className="text-[15px] font-semibold">{formatVnd(r.unit)}</span>
                           </div>
                           <div role="group" aria-label={`Số lượng ${r.product.name}`} className="inline-flex items-center self-center justify-self-start rounded-full border border-maroon/25 bg-card">
@@ -227,7 +228,7 @@ export function CartCheckout({ products, initialStep = 1 }: CartCheckoutProps) {
                       return (
                         <button key={s.id} type="button" role="radio" aria-checked={on} onClick={() => cart.setPickup({ slotId: s.id })} className={`inline-flex min-h-[46px] items-center gap-2 rounded-full border px-4 text-sm font-semibold sm:px-[18px] sm:text-[15px] ${on ? "border-maroon bg-maroon text-cream" : "border-maroon/30 bg-transparent text-maroon hover:border-maroon"}`}>
                           {s.label}
-                          {s.hot && <span className="rounded-full bg-butter px-[7px] py-px text-[11px] text-maroon">Bánh ấm</span>}
+                          {isFreshSlot(s, store.freshBatchTime) && <span className="rounded-full bg-butter px-[7px] py-px text-[11px] text-maroon">Bánh ấm</span>}
                         </button>
                       );
                     })}

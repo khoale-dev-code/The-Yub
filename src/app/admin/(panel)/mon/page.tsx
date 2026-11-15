@@ -5,6 +5,7 @@ import { ProductManager } from "@/components/admin/product-manager";
 import { PageHeader, btn } from "@/components/admin/ui";
 import { requireAdmin } from "@/modules/admin/session";
 import { productsRepository } from "@/modules/products/repository";
+import { categoriesRepository } from "@/modules/categories/repository";
 
 export const metadata: Metadata = { title: "Món bánh" };
 
@@ -26,7 +27,7 @@ export default async function AdminProductsPage() {
           </Link>
         }
       />
-      <ProductManager products={products} />
+      <ProductManager products={products} categories={await categoriesRepository.listFresh("product")} />
     </>
   );
 }

@@ -6,14 +6,15 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { formatVnd } from "@/lib/format";
-import { productImages } from "@/lib/images";
-import { storeConfig } from "@/lib/store-config";
-import { categoryLabels, type Product, type ProductCategory, type ProductStatus } from "@/modules/products/types";
+import { useStoreInfo } from "@/components/brand/store-info-context";
+import type { Category } from "@/modules/categories/types";
+import type { Product, ProductCategory, ProductStatus } from "@/modules/products/types";
 import { AddToCartButton } from "../add-to-cart-button";
 import { motionConfig } from "../motion/motion-config";
 import { useLenis } from "../motion/smooth-scroll";
 import { SearchIcon } from "../ui/icons";
 import { statusMeta } from "../ui/status-badge";
+import { productStatusLabel } from "@/modules/products/types";
 
 const PAGE = 6;
 
@@ -44,7 +45,8 @@ const filterBtn = (on: boolean) =>
   `flex min-h-11 items-center gap-2.5 rounded-[14px] border px-3.5 text-left text-[15px] font-medium text-maroon ${on ? "border-maroon bg-card" : "border-maroon/20 bg-transparent hover:border-maroon/50"}`;
 
 /** "Tat ca banh": chip loai, bo loc tinh trang + gia, sap xep, tai them khi cuon. */
-export function CatalogBrowser({ products, initialQuery = "", initialCategory = "all" }: { products: Product[]; initialQuery?: string; initialCategory?: CatFilter }) {
+export function CatalogBrowser({ products, categories, initialQuery = "", initialCategory = "all" }: { products: Product[]; categories: Category[]; initialQuery?: string; initialCategory?: CatFilter }) {
+  const store = useStoreInfo();
   const [cat, setCat] = useState<CatFilter>(initialCategory);
   const [status, setStatus] = useState<StatusFilter>("all");
   const [price, setPrice] = useState<PriceFilter>("all");
@@ -142,12 +144,13 @@ export function CatalogBrowser({ products, initialQuery = "", initialCategory = 
   };
 
   const cats = useMemo(() => {
-    const ids = Object.keys(categoryLabels) as ProductCategory[];
     return [
       { id: "all" as CatFilter, label: "Tất cả", count: products.length },
-      ...ids.map((id) => ({ id: id as CatFilter, label: categoryLabels[id], count: products.filter((p) => p.category === id).length })),
+      ...categories
+        .map((c) => ({ id: c.slug as CatFilter, label: c.name, count: products.filter((p) => p.category === c.slug).length }))
+        .filter((c) => c.count > 0),
     ];
-  }, [products]);
+  }, [products, categories]);
 
   const filtered = useMemo(() => {
     const q = normalize(query.trim());
@@ -232,7 +235,7 @@ export function CatalogBrowser({ products, initialQuery = "", initialCategory = 
               {statusFilters.map((f) => (
                 <button key={f.id} type="button" aria-pressed={f.id === status} onClick={() => reset(() => setStatus(f.id))} className={filterBtn(f.id === status)}>
                   <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full" style={{ background: f.dot }} />
-                  {f.label}
+                  {f.id === "oven" ? `Ra lò ${store.freshBatchTime}` : f.label}
                 </button>
               ))}
             </div>
@@ -247,7 +250,7 @@ export function CatalogBrowser({ products, initialQuery = "", initialCategory = 
             <div className="flex flex-col gap-2 rounded-[20px] bg-maroon p-5 text-cream">
               <strong className="font-display text-xl font-semibold">Bánh kem &amp; hộp quà</strong>
               <span className="text-sm text-cream/85">Vui lòng đặt trước ít nhất 1 ngày. Tiệm sẽ gọi xác nhận trước khi làm bánh.</span>
-              <a href={storeConfig.phoneHref} className="mt-1 text-sm font-semibold text-butter hover:text-cream">Gọi tiệm: {storeConfig.phone}</a>
+              <a href={store.phoneHref} className="mt-1 text-sm font-semibold text-butter hover:text-cream">Gọi tiệm: {store.phone}</a>
             </div>
           </aside>
 
@@ -325,14 +328,15 @@ export function CatalogBrowser({ products, initialQuery = "", initialCategory = 
 }
 
 function CatalogCard({ product: p }: { product: Product }) {
+  const store = useStoreInfo();
   const soldOut = p.status === "out";
   const meta = statusMeta[p.status];
   const href = `/san-pham/${p.slug}`;
   return (
     <article className="flex flex-col overflow-hidden rounded-[18px] border border-maroon/10 bg-card sm:rounded-[22px]">
       <Link href={href} aria-label={`Xem ${p.name}`} className="group relative block h-40 overflow-hidden bg-beige sm:h-auto sm:aspect-[1/0.92]">
-        <Image src={productImages[p.image]} alt={p.name} fill sizes="(min-width: 1024px) 300px, 50vw" className={`object-cover transition-transform duration-500 group-hover:scale-[1.03] ${soldOut ? "opacity-55" : ""}`} style={{ objectPosition: p.imagePosition ?? "center" }} />
-        <span className={`absolute left-2 top-2 rounded-full px-2.5 py-0.5 text-[11px] font-semibold sm:left-3 sm:top-3 sm:px-3 sm:py-1 sm:text-xs ${meta.className}`}>{meta.label}</span>
+        <Image src={p.cover} alt={p.name} fill sizes="(min-width: 1024px) 300px, 50vw" className={`object-cover transition-transform duration-500 group-hover:scale-[1.03] ${soldOut ? "opacity-55" : ""}`} style={{ objectPosition: p.imagePosition ?? "center" }} />
+        <span className={`absolute left-2 top-2 rounded-full px-2.5 py-0.5 text-[11px] font-semibold sm:left-3 sm:top-3 sm:px-3 sm:py-1 sm:text-xs ${meta.className}`}>{productStatusLabel(p.status, store.freshBatchTime)}</span>
       </Link>
       <div className="flex grow flex-col gap-0.5 px-2.5 pb-3 pt-2.5 sm:px-[18px] sm:pb-[18px] sm:pt-4">
         <Link href={href} className="no-underline">

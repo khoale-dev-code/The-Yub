@@ -7,8 +7,11 @@ import { MinusIcon, PlusIcon } from "@/components/ui/icons";
 import { Switch } from "./switch";
 import { toast } from "./toast";
 import { btn } from "./ui";
+import { useStoreInfo } from "@/components/brand/store-info-context";
+import { isFreshSlot } from "@/lib/pickup";
 
 export function SlotRow({ slot, used }: { slot: SlotConfig; used: number }) {
+  const { freshBatchTime } = useStoreInfo();
   const [pending, start] = useTransition();
   const [active, setActive] = useState(slot.isActive);
   const [limited, setLimited] = useState(slot.capacity !== null);
@@ -29,7 +32,7 @@ export function SlotRow({ slot, used }: { slot: SlotConfig; used: number }) {
       <div className="flex flex-col gap-1.5">
         <div className="flex items-center gap-2">
           <strong className="font-display text-[19px] font-semibold tabular-nums">{slot.label}</strong>
-          {slot.hot && <span className="rounded-full bg-butter px-2 py-px text-[11px] font-bold text-maroon">Bánh ấm</span>}
+          {isFreshSlot(slot, freshBatchTime) && <span className="rounded-full bg-butter px-2 py-px text-[11px] font-bold text-maroon">Bánh ấm</span>}
           {!active && <span className="rounded-full bg-maroon/10 px-2 py-px text-[11px] font-semibold">Tạm nghỉ</span>}
         </div>
         <div className="flex items-center gap-3">

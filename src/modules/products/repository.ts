@@ -1,7 +1,8 @@
 import { unstable_cache } from "next/cache";
 import { productImages, type ProductImageKey } from "@/lib/images";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
-import { products as seedProducts } from "./data";
+import { products as seedProducts, type SeedProduct } from "./data";
+import { coverOf, deleteUploads, legacyRefs, toMedia } from "./media";
 import type { Product, ProductCategory, ProductDetails, ProductStatus, ProductVariant } from "./types";
 
 /**
@@ -21,7 +22,8 @@ export interface ProductWrite {
   priceVnd: number;
   compareAtVnd: number | null;
   status: ProductStatus;
-  image: ProductImageKey;
+  /** Anh / video theo thu tu hien thi (ref: products/<uuid>.<ext> hoac lib:<key>) – da kiem tra o action */
+  media: string[];
   imagePosition: string | null;
   isActive: boolean;
   variants: ProductVariant[];
@@ -36,10 +38,16 @@ interface ProductsSource {
   save(id: string | null, input: ProductWrite): Promise<string>;
 }
 
+/** Gan media + anh bia cho du lieu chua co cot media (du lieu mau / truoc migration 0006) */
+function withLegacyMedia(p: SeedProduct): Product {
+  const media = toMedia(legacyRefs(p.image, p.gallery));
+  return { ...p, media, cover: coverOf(media) };
+}
+
 // ---------------------------------------------------------------- local
 function localStore(): Product[] {
   const g = globalThis as typeof globalThis & { __yubProducts?: Product[] };
-  g.__yubProducts ??= seedProducts.map((p) => ({ ...p, isActive: true }));
+  g.__yubProducts ??= seedProducts.map((p) => ({ ...withLegacyMedia(p), isActive: true }));
   return g.__yubProducts;
 }
 
@@ -61,6 +69,7 @@ const localSource: ProductsSource = {
   async save(id, input) {
     const store = localStore();
     if (store.some((p) => p.slug === input.slug && p.id !== id)) throw new Error("Đường dẫn (slug) đã có món khác dùng.");
+    const media = toMedia(input.media);
     const data: Product = {
       id: id ?? `p-${input.slug}`,
       slug: input.slug,
@@ -71,14 +80,17 @@ const localSource: ProductsSource = {
       status: input.status,
       priceVnd: input.variants[0]?.priceVnd ?? input.priceVnd,
       compareAtVnd: input.compareAtVnd ?? undefined,
-      image: input.image,
+      media,
+      cover: coverOf(media),
       imagePosition: input.imagePosition ?? undefined,
       variants: input.variants.length ? input.variants : undefined,
       isActive: input.isActive,
     };
     const existing = id ? store.find((p) => p.id === id) : undefined;
-    if (existing) Object.assign(existing, { ...data, gallery: existing.gallery, details: existing.details });
+    const removed = (existing?.media ?? []).map((m) => m.ref).filter((r) => !input.media.includes(r));
+    if (existing) Object.assign(existing, { ...data, image: undefined, gallery: undefined, details: existing.details });
     else store.push(data);
+    await deleteUploads(removed);
     return data.id;
   },
 };
@@ -96,6 +108,8 @@ interface ProductRow {
   image_path: string | null;
   image_position: string | null;
   gallery: string[] | null;
+  /** null = chua tung luu media (dung image_path + gallery cu) */
+  media?: string[] | null;
   details: ProductDetails | null;
   is_active: boolean;
   sort_order: number;
@@ -103,8 +117,13 @@ interface ProductRow {
   product_variants: { id: string; label: string; price_vnd: number; sort_order: number; is_active: boolean }[] | null;
 }
 
-const PRODUCT_SELECT =
+const PRODUCT_SELECT_BASE =
   "id, slug, name, description, tagline, price_vnd, compare_at_vnd, status, image_path, image_position, gallery, details, is_active, sort_order, categories(slug), product_variants(id, label, price_vnd, sort_order, is_active)";
+const PRODUCT_SELECT = `${PRODUCT_SELECT_BASE}, media`;
+
+/** Loi Postgres "cot khong ton tai" – chua chay migration 0006 */
+const MISSING_COLUMN = "42703";
+const MIGRATION_HINT = "Chưa chạy supabase/migrations/0006_product_media.sql – chạy trong Supabase SQL Editor rồi thử lại.";
 
 const isImageKey = (v: string | null | undefined): v is ProductImageKey => Boolean(v && v in productImages);
 
@@ -124,9 +143,13 @@ function fromRow(r: ProductRow): Product {
     status: r.status,
     priceVnd: r.price_vnd,
     compareAtVnd: r.compare_at_vnd ?? undefined,
-    image: isImageKey(r.image_path) ? r.image_path : "cubeStack",
+    image: isImageKey(r.image_path) ? r.image_path : undefined,
     imagePosition: r.image_position ?? undefined,
     gallery: (r.gallery ?? []).filter(isImageKey),
+    ...(() => {
+      const media = toMedia(Array.isArray(r.media) ? r.media : legacyRefs(r.image_path, r.gallery));
+      return { media, cover: coverOf(media) };
+    })(),
     variants: variants.length ? variants : undefined,
     details: r.details ?? undefined,
     isActive: r.is_active,
@@ -138,9 +161,12 @@ function supabaseSource(): ProductsSource | null {
   if (!db) return null;
   return {
     async listAll() {
-      const { data, error } = await db.from("products").select(PRODUCT_SELECT).is("deleted_at", null).order("sort_order").order("name");
-      if (error) throw new Error(`Không đọc được danh sách món (${error.code}).`);
-      return (data as unknown as ProductRow[]).map(fromRow);
+      const query = (cols: string) => db.from("products").select(cols).is("deleted_at", null).order("sort_order").order("name");
+      const first = await query(PRODUCT_SELECT);
+      // Chua chay migration 0006: van hien web binh thuong bang anh cu
+      const res = first.error?.code === MISSING_COLUMN ? await query(PRODUCT_SELECT_BASE) : first;
+      if (res.error) throw new Error(`Không đọc được danh sách món (${res.error.code}).`);
+      return (res.data as unknown as ProductRow[]).map(fromRow);
     },
     async remove(id) {
       // Xoa mem: don cu van giu ten mon (name_snapshot); mon bien mat khoi web va Admin
@@ -167,15 +193,24 @@ function supabaseSource(): ProductsSource | null {
         price_vnd: input.variants[0]?.priceVnd ?? input.priceVnd,
         compare_at_vnd: input.compareAtVnd,
         status: input.status,
-        image_path: input.image,
+        media: input.media,
         image_position: input.imagePosition,
         is_active: input.isActive,
       };
+      // File cu khong con trong danh sach -> xoa khoi Storage sau khi luu thanh cong
+      let oldRefs: string[] = [];
+      if (id) {
+        const old = await db.from("products").select("media, image_path, gallery").eq("id", id).maybeSingle();
+        if (old.error?.code === MISSING_COLUMN) throw new Error(MIGRATION_HINT);
+        const o = old.data as { media: string[] | null; image_path: string | null; gallery: string[] | null } | null;
+        oldRefs = o ? (Array.isArray(o.media) ? o.media : legacyRefs(o.image_path, o.gallery)) : [];
+      }
       const res = id
         ? await db.from("products").update(row).eq("id", id).select("id").single()
         : await db.from("products").insert(row).select("id").single();
       if (res.error) {
         if (res.error.code === "23505") throw new Error("Đường dẫn (slug) đã có món khác dùng.");
+        if (res.error.code === MISSING_COLUMN || res.error.code === "PGRST204") throw new Error(MIGRATION_HINT);
         throw new Error(`Không lưu được món (${res.error.code}).`);
       }
       const productId = (res.data as { id: string }).id;
@@ -191,6 +226,7 @@ function supabaseSource(): ProductsSource | null {
         );
         if (upErr) throw new Error(`Không lưu được quy cách (${upErr.code}).`);
       }
+      await deleteUploads(oldRefs.filter((r) => !input.media.includes(r)));
       return productId;
     },
   };

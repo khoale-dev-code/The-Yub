@@ -5,11 +5,13 @@ import { DrinkMenu, type DrinkMenuGroup } from "@/components/drinks/drink-menu";
 import { InquiryForm } from "@/components/drinks/inquiry-form";
 import { formatVnd } from "@/lib/format";
 import { productImages } from "@/lib/images";
-import { storeConfig } from "@/lib/store-config";
+import { getStoreInfo } from "@/modules/settings/store-info-server";
 import { settingsRepository } from "@/modules/settings/repository";
 import { ADDRESS_PLACEHOLDER } from "@/modules/settings/types";
 import { drinksRepository, productsRepository } from "@/modules/products/repository";
-import { drinkGroupLabels, type DrinkGroup, type Product } from "@/modules/products/types";
+import type { Product } from "@/modules/products/types";
+import { shortTime } from "@/modules/settings/store-info";
+import { categoriesRepository } from "@/modules/categories/repository";
 
 export const metadata: Metadata = {
   title: "Đồ uống",
@@ -24,10 +26,10 @@ const point = (n: string, title: string, text: string, last = false) => (
 );
 
 export default async function DoUongPage() {
-  const [drinks, products, settings] = await Promise.all([drinksRepository.list(), productsRepository.list(), settingsRepository.get()]);
-  const groupOrder: DrinkGroup[] = ["coffee", "tea", "other", "juice"];
-  const groups: DrinkMenuGroup[] = groupOrder
-    .map((g) => ({ id: g, label: drinkGroupLabels[g], items: drinks.filter((d) => d.group === g) }))
+  const store = await getStoreInfo();
+  const [drinks, products, settings, drinkCats] = await Promise.all([drinksRepository.list(), productsRepository.list(), settingsRepository.get(), categoriesRepository.list("drink")]);
+  const groups: DrinkMenuGroup[] = drinkCats
+    .map((g) => ({ id: g.slug, label: g.name, items: drinks.filter((d) => d.group === g.slug) }))
     .filter((g) => g.items.length > 0);
   // Chenh lech size L so voi M lay tu du lieu (khong ghi cung)
   const withL = drinks.find((d) => d.priceLVnd !== null);
@@ -67,7 +69,7 @@ export default async function DoUongPage() {
             <ol className="m-0 mt-1 flex list-none flex-col p-0">
               {point("01", "Pha khi bạn gọi", "Không pha sẵn, không để lâu.")}
               {point("02", "Tuỳ chỉnh theo bạn", "Ít ngọt, ít đá, đổi sữa – ghi chú khi đặt.")}
-              {point("03", "Ngồi lại cùng bánh ấm", `Bánh ra lò ${storeConfig.freshBatchTime}, mở cửa đến 19:00.`, true)}
+              {point("03", "Ngồi lại cùng bánh ấm", `Bánh ra lò ${store.freshBatchTime}, mở cửa đến ${shortTime(store.closeTime)}.`, true)}
             </ol>
           </div>
           {/* desktop: 3 cột */}
@@ -82,7 +84,7 @@ export default async function DoUongPage() {
               <ol className="m-0 mt-2 flex list-none flex-col p-0">
                 {point("01", "Pha khi bạn gọi", "Không pha sẵn, không để lâu.")}
                 {point("02", "Tuỳ chỉnh theo bạn", "Ít ngọt, ít đá, đổi sữa – ghi chú khi đặt.")}
-                {point("03", "Ngồi lại cùng bánh ấm", `Bánh ra lò ${storeConfig.freshBatchTime}, mở cửa đến 19:00.`, true)}
+                {point("03", "Ngồi lại cùng bánh ấm", `Bánh ra lò ${store.freshBatchTime}, mở cửa đến ${shortTime(store.closeTime)}.`, true)}
               </ol>
             </div>
             <figure className="m-0 mt-[120px] flex flex-col gap-2.5">
@@ -105,7 +107,7 @@ export default async function DoUongPage() {
               <article key={p.id} className="flex w-[78%] flex-none snap-start flex-col gap-3.5 md:w-auto">
                 <h3 className="m-0 text-base font-bold"><Link href={`/san-pham/${p.slug}`} className="no-underline">{p.name}</Link></h3>
                 <Link href={`/san-pham/${p.slug}`} aria-label={`Xem ${p.name}`} className="group relative block aspect-[4/5] overflow-hidden rounded-tr-[56px]">
-                  <Image src={productImages[p.image]} alt={p.name} fill sizes="(min-width: 768px) 360px, 78vw" className="object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
+                  <Image src={p.cover} alt={p.name} fill sizes="(min-width: 768px) 360px, 78vw" className="object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
                 </Link>
                 <div className="flex items-baseline justify-between gap-3">
                   <span className="text-[13px] text-muted-2">1 bánh + 1 ly</span>
@@ -128,13 +130,13 @@ export default async function DoUongPage() {
               <Link href="/dat-banh" className="inline-flex min-h-8 items-center no-underline">Đặt bánh online</Link>
             </nav>
             <div className="flex gap-3">
-              <a href={storeConfig.phoneHref} aria-label="Gọi tiệm" className="flex h-12 w-12 items-center justify-center rounded-full bg-maroon text-cream hover:bg-accent hover:text-cream">
+              <a href={store.phoneHref} aria-label="Gọi tiệm" className="flex h-12 w-12 items-center justify-center rounded-full bg-maroon text-cream hover:bg-accent hover:text-cream">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinejoin="round" aria-hidden="true"><path d="M4 18.5V6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v7a2.5 2.5 0 0 1-2.5 2.5H8.5z" /></svg>
               </a>
             </div>
             <div className="mt-auto flex flex-col gap-1.5">
               <p className="m-0 font-display text-[26px] font-semibold leading-[1.15] md:text-[30px]">Hẹn gặp bạn ở tiệm<br />chiều nay!</p>
-              <span className="text-sm text-muted">{settings.address ?? ADDRESS_PLACEHOLDER} · Mở cửa {storeConfig.openHours} · {storeConfig.phone}</span>
+              <span className="text-sm text-muted">{settings.address ?? ADDRESS_PLACEHOLDER} · Mở cửa {store.openHours} · {store.phone}</span>
             </div>
           </div>
           <div className="order-1 flex flex-col gap-4 md:order-2 md:gap-[18px]">
@@ -144,7 +146,7 @@ export default async function DoUongPage() {
           </div>
         </div>
         <div aria-hidden="true" className="mt-12 overflow-hidden whitespace-nowrap text-center font-display text-[clamp(110px,21vw,320px)] font-semibold leading-[0.8] tracking-[-0.03em] text-beige">The Yub</div>
-        <p className="m-0 px-6 pb-28 pt-[18px] text-center text-[13px] text-muted md:pb-6">© 2026 {storeConfig.name}</p>
+        <p className="m-0 px-6 pb-28 pt-[18px] text-center text-[13px] text-muted md:pb-6">© 2026 {store.name}</p>
       </footer>
     </>
   );
