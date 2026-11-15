@@ -1,0 +1,14 @@
+node_modules/
+.next/
+out/
+build/
+.env
+.env*.local
+*.tsbuildinfo
+.DS_Store
+
+.yub-backup/
+
+# Them boi The Yub (khong day bi mat / file tam len GitHub)
+.env.local
+npm-debug.log*
