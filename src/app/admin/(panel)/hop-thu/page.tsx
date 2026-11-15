@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ChatIcon, PhoneIcon } from "@/components/admin/admin-icons";
 import { InquiryActions } from "@/components/admin/inquiry-actions";
+import { FreshnessGuard } from "@/components/admin/freshness-guard";
 import { EmptyState, PageHeader, btn, card, phoneDigits, zaloLink } from "@/components/admin/ui";
 import { timeAgo } from "@/lib/dates";
 import { requireAdmin } from "@/modules/admin/session";
@@ -21,9 +22,11 @@ export default async function AdminInboxPage({ searchParams }: { searchParams: P
   const tab = TABS.find((t) => t.id === tabParam) ?? TABS[0]!;
   const all = await inquiriesRepository.list();
   const items = all.filter((i) => i.status === tab.status);
+  const renderedAt = Date.now();
 
   return (
     <>
+      <FreshnessGuard renderedAt={renderedAt} />
       <PageHeader title="Hộp thư" description="Câu hỏi khách gửi từ trang Đồ uống – gọi hoặc nhắn Zalo để trả lời." />
       <nav aria-label="Lọc hộp thư" className="mb-5 flex gap-1.5">
         {TABS.map((t) => {

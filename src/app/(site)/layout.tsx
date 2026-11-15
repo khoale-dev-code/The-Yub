@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import "../fonts";
 import "../globals.css";
 import { SiteHeader } from "@/components/layout/site-header";
 import { CartToast } from "@/components/layout/cart-toast";

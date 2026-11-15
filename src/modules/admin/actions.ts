@@ -13,7 +13,7 @@ import { logAudit } from "./audit";
 import { changeOrderStatus, createOrderByAdmin, deleteOrder, editOrder, setOrderPaid } from "./orders";
 import { addStaff, removeStaff, updateStaff } from "./staff";
 import { orderInputSchema } from "@/modules/orders/schema";
-import { AdminAuthError, assertAdmin } from "./session";
+import { ADMIN_USERS_TAG, AdminAuthError, assertAdmin } from "./session";
 
 export type ActionResult = { ok: true; id?: string } | { ok: false; error: string };
 
@@ -347,6 +347,7 @@ export async function addStaffAction(raw: unknown): Promise<ActionResult> {
     if (!parsed.success) return { ok: false, error: firstIssue(parsed.error) };
     await addStaff(parsed.data);
     await logAudit(user, "staff.add", "staff", parsed.data.email, { role: parsed.data.role });
+    revalidateTag(ADMIN_USERS_TAG);
     revalidatePath("/admin", "layout");
     return { ok: true };
   } catch (err) {
@@ -361,6 +362,7 @@ export async function updateStaffAction(raw: unknown): Promise<ActionResult> {
     if (!parsed.success) return { ok: false, error: firstIssue(parsed.error) };
     await updateStaff(user, parsed.data.userId, { name: parsed.data.name, role: parsed.data.role });
     await logAudit(user, "staff.update", "staff", parsed.data.userId, { role: parsed.data.role });
+    revalidateTag(ADMIN_USERS_TAG);
     revalidatePath("/admin", "layout");
     return { ok: true };
   } catch (err) {
@@ -375,6 +377,7 @@ export async function removeStaffAction(raw: unknown): Promise<ActionResult> {
     if (!parsed.success) return { ok: false, error: firstIssue(parsed.error) };
     await removeStaff(user, parsed.data.userId);
     await logAudit(user, "staff.remove", "staff", parsed.data.userId);
+    revalidateTag(ADMIN_USERS_TAG);
     revalidatePath("/admin", "layout");
     return { ok: true };
   } catch (err) {

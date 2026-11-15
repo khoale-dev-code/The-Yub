@@ -48,6 +48,10 @@ Giao diện: máy tính có thanh menu bên trái; điện thoại / máy tính 
 
 Khi đã cấu hình Supabase, **toàn bộ web** (thực đơn, giá, đơn hàng, câu hỏi, khung giờ, địa chỉ) đọc/ghi từ database. Giá trong `seed.sql` là **giá mẫu** – chủ tiệm sửa lại trong Admin > Món bánh trước khi mở bán.
 
+## Dữ liệu mẫu để thử Admin
+
+SQL Editor → chạy `supabase/test-data/du-lieu-mau.sql`: ~70 đơn mẫu (30 ngày trước → 3 ngày tới, đủ trạng thái) + 10 câu hỏi khách. Giá lấy theo thực đơn hiện tại. Xoá: chạy `supabase/test-data/xoa-du-lieu-mau.sql` (chỉ xoá dữ liệu mẫu). **Xoá trước khi mở bán thật.**
+
 ## Xem thử khi chưa có Supabase
 
 Thêm vào `.env.local`: `ADMIN_DEMO_PASSWORD=<ít nhất 12 ký tự>` rồi `npm run dev`. Đăng nhập bằng mật khẩu đó.
@@ -58,6 +62,9 @@ Dữ liệu chỉ lưu tạm trong bộ nhớ (mất khi tắt server). Chế đ
 - `npm run dev` giờ dùng **Turbopack** (biên dịch nhanh hơn nhiều so với webpack). Lần đầu mở mỗi trang vẫn mất 1–3 giây để biên dịch – đó là chế độ phát triển; bản `npm run build` + `npm start` không có độ trễ này. Cần webpack cũ: `npm run dev:webpack`.
 - Admin có bố cục riêng, không tải hiệu ứng / Lenis / giỏ hàng của trang công khai.
 - Nếu Turbopack báo lỗi lạ sau khi cập nhật: dừng dev, xoá thư mục `.next`, chạy lại.
+- `npm run dev` in thời gian từng lần gọi Supabase (`[supabase] 142ms GET rest/orders`). Mỗi lần > 400ms ghi “(chậm)” → kiểm tra region project (nên Singapore) hoặc mạng.
+- Supabase → Project Settings → **JWT Keys**: nếu project còn dùng *Legacy JWT secret*, chuyển sang khoá ký mới (ECC) để server tự kiểm phiên đăng nhập, không phải hỏi Supabase mỗi lần mở trang.
+- Windows: thêm thư mục dự án vào danh sách loại trừ của Windows Security (Virus & threat protection → Exclusions) giúp `npm run dev` biên dịch nhanh hơn rõ rệt.
 
 ## Chưa có (gợi ý làm tiếp)
 

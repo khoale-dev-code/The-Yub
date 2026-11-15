@@ -21,6 +21,7 @@ export default async function AdminDashboardPage() {
   const user = await requireAdmin();
   const [d, settings] = await Promise.all([getDashboard(), settingsRepository.getFresh()]);
   const s = d.stats;
+  const renderedAt = Date.now();
 
   const stats = [
     { label: "Chờ xác nhận", value: String(s.pendingCount), hint: s.pendingCount ? "Gọi khách rồi xác nhận" : "Không có đơn chờ", href: "/admin/don-hang?trang-thai=cho-xac-nhan", hot: s.pendingCount > 0 },
@@ -36,7 +37,7 @@ export default async function AdminDashboardPage() {
         description={<span>Chào {user.name} · <span className="capitalize">{longDate(d.today)}</span></span>}
         actions={
           <>
-            <LiveRefresh />
+            <LiveRefresh renderedAt={renderedAt} />
             <Link href="/admin/don-hang/moi" className={btn.primary}><PlusIcon size={17} /> Tạo đơn</Link>
           </>
         }

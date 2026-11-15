@@ -1,6 +1,5 @@
 /* Font nap qua CSS de build khong phu thuoc mang.
    Khi deploy chinh thuc co the chuyen sang next/font/google (self-host) – xem docs/ROADMAP.md */
-@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
 
 @theme {
@@ -19,7 +18,7 @@
   --color-muted-2: #6e4b44;
   --color-rose: #f1dccb;
 
-  --font-display: "Fraunces", Georgia, serif;
+  --font-display: "Fraunces Variable", "Fraunces", Georgia, serif;
   --font-sans: "Be Vietnam Pro", system-ui, -apple-system, sans-serif;
 
   --animate-marquee: yub-marquee 42s linear infinite;
@@ -152,5 +151,14 @@ html.yub-reduced-motion *::after {
 @keyframes yub-spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes yub-nav-bar {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(200%);
   }
 }

@@ -7,6 +7,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { brandImages } from "@/lib/images";
 import { signOutAction } from "@/modules/admin/auth-actions";
 import { CakeIcon, ChartIcon, ClockIcon, CupIcon, ExternalIcon, GearIcon, HomeIcon, InboxIcon, LogoutIcon, MoreIcon, ReceiptIcon, XIcon } from "./admin-icons";
+import { NavPending, NavPendingBar } from "./nav-pending";
 import { AdminToaster } from "./toast";
 
 interface ShellUser {
@@ -81,11 +82,13 @@ export function AdminShell({ user, counts, children }: { user: ShellUser; counts
                   <Link
                     key={item.href}
                     href={item.href}
+                    prefetch
                     aria-current={active ? "page" : undefined}
                     className={`group flex min-h-11 items-center gap-3 rounded-[14px] px-3 text-[15px] font-semibold no-underline transition-colors ${active ? "bg-cream text-maroon" : "text-cream/80 hover:bg-cream/8 hover:text-cream"}`}
                   >
                     <Icon size={20} />
                     <span className="flex-1">{item.label}</span>
+                    <NavPending tone={active ? "dark" : "light"} />
                     {item.badge ? (
                       <span className={`min-w-6 rounded-full px-1.5 py-0.5 text-center text-[12px] font-bold tabular-nums ${active ? "bg-maroon text-cream" : "bg-butter text-maroon"}`}>{item.badge}</span>
                     ) : null}
@@ -141,9 +144,10 @@ export function AdminShell({ user, counts, children }: { user: ShellUser; counts
             const Icon = item.icon;
             return (
               <li key={item.href}>
-                <Link href={item.href} aria-current={active ? "page" : undefined} className={`relative flex min-h-[62px] flex-col items-center justify-center gap-1 text-[11px] font-semibold no-underline ${active ? "text-maroon" : "text-muted-2"}`}>
+                <Link href={item.href} prefetch aria-current={active ? "page" : undefined} className={`relative flex min-h-[62px] flex-col items-center justify-center gap-1 text-[11px] font-semibold no-underline ${active ? "text-maroon" : "text-muted-2"}`}>
                   <span className={`flex h-8 w-14 items-center justify-center rounded-full transition-colors ${active ? "bg-butter/35" : ""}`}><Icon size={21} /></span>
                   {item.label}
+                  <NavPendingBar />
                   {item.badge ? <span className="absolute right-[calc(50%-24px)] top-1.5 min-w-5 rounded-full bg-accent px-1 text-center text-[11px] font-bold leading-5 text-cream">{item.badge}</span> : null}
                 </Link>
               </li>
@@ -177,8 +181,9 @@ export function AdminShell({ user, counts, children }: { user: ShellUser; counts
                 const Icon = item.icon;
                 return (
                   <li key={item.href}>
-                    <Link href={item.href} className="flex min-h-[52px] items-center gap-3 rounded-[16px] px-3 text-[16px] font-semibold text-maroon no-underline hover:bg-maroon/5">
-                      <Icon size={21} /> {item.label}
+                    <Link href={item.href} prefetch className="flex min-h-[52px] items-center gap-3 rounded-[16px] px-3 text-[16px] font-semibold text-maroon no-underline hover:bg-maroon/5">
+                      <Icon size={21} /> <span className="flex-1">{item.label}</span>
+                      <NavPending tone="dark" />
                     </Link>
                   </li>
                 );

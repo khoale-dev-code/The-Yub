@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { supabaseAnonKey, supabaseUrl } from "./server";
+import { timedFetch } from "./timed-fetch";
 
 /**
  * Client theo phien dang nhap (cookie) – CHI dung de xac thuc nguoi dung Admin
@@ -12,6 +13,7 @@ export async function createSupabaseSessionClient() {
   if (!url || !anon) return null;
   const store = await cookies();
   return createServerClient(url, anon, {
+    global: { fetch: timedFetch },
     cookies: {
       getAll: () => store.getAll(),
       setAll: (list) => {

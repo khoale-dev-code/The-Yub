@@ -5,6 +5,7 @@ import { ChatIcon, ChevronLeftIcon, PhoneIcon } from "@/components/admin/admin-i
 import { CopyButton } from "@/components/admin/copy-button";
 import { DeleteButton } from "@/components/admin/delete-button";
 import { OrderActions, PaymentActions } from "@/components/admin/order-actions";
+import { FreshnessGuard } from "@/components/admin/freshness-guard";
 import { OrderStatusBadge, PageHeader, PaymentBadge, SectionTitle, btn, card, phoneDigits, zaloLink } from "@/components/admin/ui";
 import { relativeDateLabel, timeAndDate, todayVN } from "@/lib/dates";
 import { formatVnd } from "@/lib/format";
@@ -39,6 +40,7 @@ export default async function AdminOrderDetailPage({ params }: PageProps) {
   if (!order) notFound();
 
   const today = todayVN();
+  const renderedAt = Date.now();
   const closed = order.status === "cancelled" || order.status === "rejected";
   const itemCount = order.items.reduce((n, i) => n + i.qty, 0);
   const bank =
@@ -48,6 +50,7 @@ export default async function AdminOrderDetailPage({ params }: PageProps) {
 
   return (
     <>
+      <FreshnessGuard renderedAt={renderedAt} />
       <PageHeader
         back={
           <Link href="/admin/don-hang" className="inline-flex min-h-9 items-center gap-1 self-start text-[14px] font-semibold text-muted no-underline hover:text-maroon">

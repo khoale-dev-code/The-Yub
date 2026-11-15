@@ -3,21 +3,36 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { RefreshIcon } from "./admin-icons";
+import { FreshnessGuard } from "./freshness-guard";
+
+/** Dang go chu / mo hop thoai -> hoan tu cap nhat de khong lam giat man hinh */
+function userBusy(): boolean {
+  const el = document.activeElement;
+  if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement) return true;
+  if (el instanceof HTMLElement && el.isContentEditable) return true;
+  return Boolean(document.querySelector('[role="dialog"], [role="alertdialog"]'));
+}
 
 const fmt = (d: Date) => d.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Ho_Chi_Minh" });
 
 /** Tu tai lai du lieu moi 30 giay khi tab dang mo (de thay don moi ma khong can bam F5) */
-export function LiveRefresh({ intervalMs = 30_000 }: { intervalMs?: number }) {
+/** renderedAt: thoi diem server dung trang (Date.now()) – trang mo tu bo nho tam se tu lam moi neu da cu */
+export function LiveRefresh({ intervalMs = 30_000, renderedAt }: { intervalMs?: number; renderedAt?: number }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [at, setAt] = useState<string | null>(null);
 
+  // Gio hien thi = gio du lieu tren man hinh (khong phai gio mo trang)
   useEffect(() => {
-    setAt(fmt(new Date()));
+    if (renderedAt) setAt(fmt(new Date(renderedAt)));
+  }, [renderedAt]);
+
+  useEffect(() => {
+    if (!renderedAt) setAt(fmt(new Date()));
     const tick = () => {
-      if (document.visibilityState !== "visible") return;
+      if (document.visibilityState !== "visible" || userBusy()) return;
       start(() => router.refresh());
-      setAt(fmt(new Date()));
+      if (!renderedAt) setAt(fmt(new Date()));
     };
     const id = window.setInterval(tick, intervalMs);
     const onVisible = () => document.visibilityState === "visible" && tick();
@@ -26,9 +41,11 @@ export function LiveRefresh({ intervalMs = 30_000 }: { intervalMs?: number }) {
       window.clearInterval(id);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [intervalMs, router]);
+  }, [intervalMs, router, renderedAt]);
 
   return (
+    <>
+    {renderedAt ? <FreshnessGuard renderedAt={renderedAt} /> : null}
     <button
       type="button"
       onClick={() => {
@@ -45,5 +62,6 @@ export function LiveRefresh({ intervalMs = 30_000 }: { intervalMs?: number }) {
       {pending ? "Đang cập nhật…" : at ? `Tự cập nhật · ${at}` : "Tự cập nhật"}
       <RefreshIcon size={15} className={pending ? "animate-spin" : ""} />
     </button>
+    </>
   );
 }

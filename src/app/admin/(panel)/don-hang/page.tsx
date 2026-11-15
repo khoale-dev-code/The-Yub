@@ -41,6 +41,7 @@ export default async function AdminOrdersPage({ searchParams }: PageProps) {
   const q = sanitizeQuery(one(sp.q));
   const unpaidOnly = one(sp["thanh-toan"]) === "chua-nhan";
 
+  const renderedAt = Date.now();
   const all = await getOrdersRepository().list({ pickupDate, q: q || undefined, limit: 300 });
   const scoped = unpaidOnly ? all.filter((o) => o.payment === "transfer" && o.paymentStatus !== "paid" && OPEN_STATUSES.includes(o.status)) : all;
   const countFor = (statuses: OrderStatus[] | null) => scoped.filter((o) => !statuses || statuses.includes(o.status)).length;
@@ -69,7 +70,7 @@ export default async function AdminOrdersPage({ searchParams }: PageProps) {
         description="Gọi khách xác nhận, theo dõi bánh và ghi nhận thanh toán."
         actions={
           <>
-            <LiveRefresh />
+            <LiveRefresh renderedAt={renderedAt} />
             <Link href="/admin/don-hang/moi" className={btn.primary}><PlusIcon size={17} /> Tạo đơn</Link>
           </>
         }

@@ -1,8 +1,10 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { unstable_cache } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
-import { getSupabaseAdmin, isSupabaseConfigured, missingSupabaseEnv } from "@/lib/supabase/server";
+import { getVerifiedUser } from "@/lib/supabase/claims";
+import { getSupabaseAdmin, isSupabaseConfigured, missingSupabaseEnv, supabaseAnonKey, supabaseUrl } from "@/lib/supabase/server";
 import { createSupabaseSessionClient } from "@/lib/supabase/ssr";
 
 export type AdminRole = "owner" | "staff";
@@ -46,6 +48,27 @@ function safeEqual(a: string, b: string): boolean {
   return x.length === y.length && timingSafeEqual(x, y);
 }
 
+/** Tag xoa cache quyen quan ly – goi revalidateTag(ADMIN_USERS_TAG) sau khi them / doi / thu hoi tai khoan */
+export const ADMIN_USERS_TAG = "admin-users";
+
+interface AdminRow {
+  display_name: string;
+  role: AdminRole;
+}
+
+async function fetchAdminRow(userId: string): Promise<AdminRow | null> {
+  const db = getSupabaseAdmin();
+  if (!db) return null;
+  const { data } = await db.from("admin_users").select("display_name, role").eq("user_id", userId).maybeSingle();
+  return (data as AdminRow | null) ?? null;
+}
+
+/**
+ * Quyen quan ly theo user id – luu 2 phut (bot 1 lan goi Supabase moi trang).
+ * Thao tac trong Admin > Cai dat xoa cache ngay; sua truc tiep bang SQL thi toi da 2 phut moi co hieu luc.
+ */
+const cachedAdminRow = unstable_cache(fetchAdminRow, ["admin-user-row-v1"], { tags: [ADMIN_USERS_TAG], revalidate: 120 });
+
 /**
  * Nguoi dang dang nhap co quyen Admin? (null neu khong)
  * cache(): layout + page + action trong CUNG 1 request chi hoi Supabase 1 lan.
@@ -59,15 +82,16 @@ export const getAdminUser = cache(async function getAdminUser(): Promise<AdminUs
   if (mode !== "supabase") return null;
 
   const auth = await createSupabaseSessionClient();
-  const db = getSupabaseAdmin();
-  if (!auth || !db) return null;
-  // getUser() xac thuc lai JWT voi Supabase (khong tin cookie mot cach mu quang)
-  const { data, error } = await auth.auth.getUser();
-  if (error || !data.user) return null;
-  const { data: row } = await db.from("admin_users").select("display_name, role").eq("user_id", data.user.id).maybeSingle();
+  const url = supabaseUrl();
+  const anon = supabaseAnonKey();
+  if (!auth || !url || !anon) return null;
+  // Kiem chu ky JWT (khong tin cookie mot cach mu quang) – xem src/lib/supabase/claims.ts
+  const user = await getVerifiedUser(auth, url, anon);
+  if (!user) return null;
+  // Chi dung cache khi DA la quan ly; chua co quyen thi hoi lai ngay (vua cap quyen bang SQL la vao duoc luon)
+  const row = (await cachedAdminRow(user.id)) ?? (await fetchAdminRow(user.id));
   if (!row) return null;
-  const r = row as { display_name: string; role: AdminRole };
-  return { id: data.user.id, email: data.user.email ?? "", name: r.display_name || data.user.email || "Quản lý", role: r.role, demo: false };
+  return { id: user.id, email: user.email, name: row.display_name || user.email || "Quản lý", role: row.role, demo: false };
 });
 
 /** Dung trong layout/page Admin: chua dang nhap -> ve trang dang nhap */

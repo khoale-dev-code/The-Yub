@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { timedFetch } from "./timed-fetch";
 
 /**
  * Supabase – CHI dung trong code server (service layer, server actions, route handlers).
@@ -45,6 +46,7 @@ export function getSupabaseAdmin(): SupabaseClient | null {
   if (!isSupabaseConfigured()) return null;
   adminClient ??= createClient(supabaseUrl() as string, process.env.SUPABASE_SERVICE_ROLE_KEY as string, {
     auth: { persistSession: false, autoRefreshToken: false },
+    global: { fetch: timedFetch },
   });
   return adminClient;
 }
