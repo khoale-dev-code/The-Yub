@@ -47,7 +47,7 @@ export function CartToast() {
 
 
   return (
-    <div aria-live="polite" className="pointer-events-none fixed inset-x-3 bottom-24 z-[75] flex justify-center md:inset-x-auto md:bottom-auto md:right-6 md:top-[calc(var(--yub-header-h)+12px)]">
+    <div aria-live="polite" className="pointer-events-none fixed inset-x-3 bottom-[calc(112px+env(safe-area-inset-bottom))] z-[75] flex justify-center md:inset-x-auto md:bottom-auto md:right-6 md:top-[calc(var(--yub-header-h)+12px)]">
       {item && (
         <div
           ref={box}

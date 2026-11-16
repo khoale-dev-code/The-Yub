@@ -24,7 +24,7 @@ export function ProductCard({ product, sizes = "(min-width: 1024px) 280px, (min-
           />
         </Link>
         <StatusBadge status={product.status} className="absolute left-3 top-3" />
-        <FavoriteButton name={product.name} className="absolute right-2 top-2" />
+        <FavoriteButton productId={product.id} name={product.name} className="absolute right-2 top-2" />
       </div>
       <div className="flex flex-col gap-0.5">
         <h3 className="m-0 font-display text-[21px] font-semibold leading-[1.25]">

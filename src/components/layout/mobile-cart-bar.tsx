@@ -15,7 +15,7 @@ export type PriceMap = Record<string, { base: number; variants?: Record<string, 
 export function MobileCartBar({ prices }: { prices: PriceMap }) {
   const { lines, count } = useCart();
   const pathname = usePathname();
-  if (count === 0 || pathname.startsWith("/gio-hang") || pathname.startsWith("/don-hang") || pathname.startsWith("/dat-banh")) return null;
+  if (count === 0 || pathname.startsWith("/gio-hang") || pathname.startsWith("/don-hang")) return null;
 
   const total = lines.reduce((sum, l) => {
     const p = prices[l.productId];

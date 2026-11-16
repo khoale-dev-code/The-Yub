@@ -248,7 +248,7 @@ export function OrderForm({ products, categories, initial }: { products: Product
         </section>
 
         {error && <p role="alert" className="m-0 rounded-2xl bg-rose px-4 py-3 text-[14px] font-semibold text-accent">{error}</p>}
-        <div className="sticky bottom-[76px] z-10 flex items-center gap-3 rounded-[22px] bg-dark p-2 pl-5 text-cream shadow-[0_14px_30px_-12px_rgba(36,18,13,0.5)] lg:static">
+        <div className="sticky bottom-[calc(12px+env(safe-area-inset-bottom))] z-10 flex items-center gap-3 rounded-[22px] bg-dark p-2 pl-5 text-cream shadow-[0_14px_30px_-12px_rgba(36,18,13,0.5)] lg:static">
           <span className="flex flex-1 flex-col leading-tight">
             <span className="text-[12px] text-cream/70">Tạm tính · {count} món</span>
             <strong className="font-display text-[20px] font-semibold tabular-nums">{formatVnd(total)}</strong>

@@ -36,7 +36,7 @@ export default async function AdminOrderDetailPage({ params }: PageProps) {
   const { code } = await params;
   const decoded = decodeURIComponent(code);
   if (!/^YUB-\d{4}-\d{4}$/.test(decoded)) notFound();
-  const [order, settings, audit] = await Promise.all([getOrdersRepository().findByCode(decoded), settingsRepository.getFresh(), listAudit("order", decoded)]);
+  const [order, settings, audit, customerId] = await Promise.all([getOrdersRepository().findByCode(decoded), settingsRepository.getFresh(), listAudit("order", decoded), getOrdersRepository().customerIdOf(decoded)]);
   if (!order) notFound();
 
   const today = todayVN();
@@ -90,6 +90,11 @@ export default async function AdminOrderDetailPage({ params }: PageProps) {
               </span>
               <CopyButton text={phoneDigits(order.customerPhone)} label="Chép số điện thoại" />
             </div>
+            {customerId && (
+              <Link href={`/admin/khach-hang/${customerId}`} className="inline-flex min-h-10 items-center gap-1.5 self-start rounded-full bg-butter/30 px-3.5 text-[13px] font-semibold text-maroon no-underline hover:bg-butter/50">
+                Khách có tài khoản · xem hồ sơ & lịch sử đơn →
+              </Link>
+            )}
             <div className="grid grid-cols-2 gap-2">
               <a href={`tel:${phoneDigits(order.customerPhone)}`} className={`${btn.primary} min-h-11`}><PhoneIcon size={17} /> Gọi</a>
               <a href={zaloLink(order.customerPhone)} target="_blank" rel="noopener noreferrer" className={`${btn.secondary} min-h-11`}><ChatIcon size={17} /> Zalo</a>

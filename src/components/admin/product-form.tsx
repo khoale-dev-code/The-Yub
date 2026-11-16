@@ -240,7 +240,7 @@ export function ProductForm({ product, categories, canDelete = false }: { produc
         </section>
 
         {error && <p role="alert" className="m-0 rounded-2xl bg-rose px-4 py-3 text-[14px] font-semibold text-accent">{error}</p>}
-        <div className="sticky bottom-[76px] z-10 flex gap-2 rounded-full bg-[#F7F0E3]/90 p-1 backdrop-blur lg:static lg:bg-transparent lg:p-0">
+        <div className="sticky bottom-[calc(12px+env(safe-area-inset-bottom))] z-10 flex gap-2 rounded-full bg-[#F7F0E3]/90 p-1 backdrop-blur lg:static lg:bg-transparent lg:p-0">
           <button type="submit" disabled={pending} className={`${btn.primary} min-h-[52px] flex-1 text-base`}>{pending ? "Đang lưu…" : product ? "Lưu thay đổi" : "Thêm món"}</button>
           <Link href="/admin/mon" className={`${btn.secondary} min-h-[52px]`}>Huỷ</Link>
         </div>

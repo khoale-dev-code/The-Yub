@@ -70,6 +70,8 @@ export interface Order {
   createdAt: string;
   updatedAt: string;
   paidAt: string | null;
+  /** Khach co tai khoan (dang nhap Google) – chi gan o server tu phien dang nhap */
+  customerId?: string | null;
 }
 
 export const paymentLabels: Record<PaymentMethod, string> = {

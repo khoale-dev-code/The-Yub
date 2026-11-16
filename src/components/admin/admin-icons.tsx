@@ -112,3 +112,6 @@ export const TagIcon = ({ size = 20, ...p }: P) => (
 export const PencilIcon = ({ size = 20, ...p }: P) => (
   <svg {...base(size)} {...p}><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z" /><path d="m13.5 6.5 4 4" /></svg>
 );
+export const UsersIcon = ({ size = 20, ...p }: P) => (
+  <svg {...base(size)} {...p}><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20c.9-3.6 3.4-5.5 6.5-5.5s5.6 1.9 6.5 5.5" /><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18.5 14.8c1.6.8 2.6 2.5 3 5.2" /></svg>
+);

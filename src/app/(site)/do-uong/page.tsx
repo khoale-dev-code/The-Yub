@@ -127,7 +127,7 @@ export default async function DoUongPage() {
             <nav aria-label="Liên kết chân trang" className="flex flex-col gap-1.5 text-sm">
               <Link href="/thuc-don" className="inline-flex min-h-8 items-center no-underline">Thực đơn bánh</Link>
               <Link href="/do-uong" className="inline-flex min-h-8 items-center no-underline">Đồ uống</Link>
-              <Link href="/dat-banh" className="inline-flex min-h-8 items-center no-underline">Đặt bánh online</Link>
+              <Link href="/thuc-don" className="inline-flex min-h-8 items-center no-underline">Đặt bánh</Link>
             </nav>
             <div className="flex gap-3">
               <a href={store.phoneHref} aria-label="Gọi tiệm" className="flex h-12 w-12 items-center justify-center rounded-full bg-maroon text-cream hover:bg-accent hover:text-cream">

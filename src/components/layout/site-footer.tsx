@@ -4,11 +4,18 @@ import { brandImages } from "@/lib/images";
 import { getStoreInfo } from "@/modules/settings/store-info-server";
 import { settingsRepository } from "@/modules/settings/repository";
 import { ADDRESS_PLACEHOLDER } from "@/modules/settings/types";
-import { TornWave } from "../ui/torn-wave";
+import { WaveEdge } from "../ui/wave-edge";
+
+/** Nen footer: kem bo dam hon nen trang mot chut -> song lon phia tren hien ro */
+const FOOTER_BG = "#F5E2BD";
 
 const headingCls = "mb-1.5 text-xs font-bold uppercase tracking-[0.2em] text-accent";
 
-export async function SiteFooter({ variant = "full" }: { variant?: "full" | "compact" }) {
+/**
+ * `backdrop`: mau cua section ngay phia tren footer. Khi co, dai trong phia tren song duoc to cung mau
+ * do de song "an" vao section truoc thay vi tao 1 duong ke thang.
+ */
+export async function SiteFooter({ variant = "full", backdrop }: { variant?: "full" | "compact"; backdrop?: string }) {
   const store = await getStoreInfo();
   const address = (await settingsRepository.get()).address ?? ADDRESS_PLACEHOLDER;
   if (variant === "compact") {
@@ -22,14 +29,16 @@ export async function SiteFooter({ variant = "full" }: { variant?: "full" | "com
             {address} · Mở cửa {store.openHours} · Gọi trước khi đến:{" "}
             <a href={store.phoneHref} className="font-semibold text-maroon">{store.phone}</a>
           </span>
-          <span className="text-[13px] text-muted">© 2026 {store.name}</span>
+          <span className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-muted">© 2026 {store.name}<Link href="/chinh-sach-bao-mat" className="text-muted">Chính sách bảo mật</Link></span>
         </div>
       </footer>
     );
   }
   return (
-    <footer id="ghe-tiem" className="relative bg-cream text-maroon">
-      <TornWave fill="#FFF3D9" className="absolute -top-[47px] left-0" />
+    <>
+    <div aria-hidden="true" className="h-16 md:h-[clamp(80px,11vw,170px)]" style={backdrop ? { backgroundColor: backdrop } : undefined} />
+    <footer id="ghe-tiem" className="relative text-maroon" style={{ backgroundColor: FOOTER_BG }}>
+      <WaveEdge fill={FOOTER_BG} edge="above" />
       {/* mobile */}
       <div className="flex flex-col gap-[18px] px-5 pb-32 pt-11 md:hidden">
         <div className="flex items-center justify-between gap-3">
@@ -45,15 +54,15 @@ export async function SiteFooter({ variant = "full" }: { variant?: "full" | "com
         <nav aria-label="Liên kết chân trang" className="grid grid-cols-2 gap-x-4 gap-y-1">
           <Link href="/thuc-don" className="flex min-h-10 items-center no-underline">Bánh</Link>
           <Link href="/do-uong" className="flex min-h-10 items-center no-underline">Đồ uống</Link>
-          <Link href="/dat-banh" className="flex min-h-10 items-center no-underline">Đặt trước</Link>
-          <Link href="/cau-chuyen" className="flex min-h-10 items-center no-underline">Câu chuyện</Link>
+          <Link href="/thuc-don" className="flex min-h-10 items-center no-underline">Đặt trước</Link>
+          <Link href="/yeu-thich" className="flex min-h-10 items-center no-underline">Yêu thích</Link>
         </nav>
         <div className="flex flex-wrap gap-2">
           {["Facebook", "Instagram", "TikTok"].map((n) => (
             <span key={n} className="inline-flex min-h-11 items-center rounded-full border border-maroon/25 px-4 text-sm">{n}</span>
           ))}
         </div>
-        <span className="border-t border-maroon/15 pt-3.5 text-xs text-muted-2">© 2026 {store.name}</span>
+        <span className="flex flex-wrap justify-between gap-2 border-t border-maroon/15 pt-3.5 text-xs text-muted-2">© 2026 {store.name}<Link href="/chinh-sach-bao-mat" className="text-muted-2">Chính sách bảo mật</Link></span>
       </div>
       <div className="mx-auto hidden max-w-[1200px] flex-col gap-12 px-6 pb-8 pt-[72px] md:flex">
         <div className="flex flex-wrap justify-between gap-10">
@@ -74,8 +83,8 @@ export async function SiteFooter({ variant = "full" }: { variant?: "full" | "com
             <Link href="/thuc-don" className="no-underline">Bánh</Link>
             <Link href="/do-uong" className="no-underline">Đồ uống</Link>
             <Link href="/#cap-doi" className="no-underline">Cặp đôi ăn ý</Link>
-            <Link href="/dat-banh" className="no-underline">Đặt trước</Link>
-            <Link href="/cau-chuyen" className="no-underline">Câu chuyện</Link>
+            <Link href="/thuc-don" className="no-underline">Đặt trước</Link>
+            <Link href="/yeu-thich" className="no-underline">Yêu thích</Link>
             <Link href="/ghe-tiem" className="no-underline">Ghé tiệm</Link>
           </div>
           <div className="flex flex-[0_1_160px] flex-col gap-2">
@@ -87,10 +96,11 @@ export async function SiteFooter({ variant = "full" }: { variant?: "full" | "com
           </div>
         </div>
         <div className="flex flex-wrap justify-between gap-3 border-t border-maroon/15 pt-5 text-[13px] text-muted-2">
-          <span>© 2026 {store.name}</span>
+          <span className="flex flex-wrap gap-x-5">© 2026 {store.name}<Link href="/chinh-sach-bao-mat" className="text-inherit">Chính sách bảo mật</Link></span>
           <span>Bánh · Cà phê · Trà</span>
         </div>
       </div>
     </footer>
+    </>
   );
 }

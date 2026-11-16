@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { saveSettingsAction } from "@/modules/admin/actions";
+import { directionsUrlOf, isMapEmbedUrl, looksLikeIframe, normalizeMapEmbed } from "@/modules/settings/map";
 import { defaultStoreInfo } from "@/modules/settings/store-info";
 import type { StoreSettings } from "@/modules/settings/types";
 import { Switch } from "./switch";
@@ -26,6 +27,21 @@ export function SettingsForm({ initial, readOnly }: { initial: StoreSettings; re
     onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => set(k, e.target.value),
     disabled: readOnly,
   });
+
+  const embed = s.mapEmbedUrl ? normalizeMapEmbed(s.mapEmbedUrl) : "";
+  const embedOk = embed !== "" && isMapEmbedUrl(embed);
+  const directions = directionsUrlOf({ mapUrl: s.mapUrl?.trim() || null, mapEmbedUrl: embedOk ? embed : null, address: s.address?.trim() || null });
+
+  /** Dan ca ma <iframe> vao bat ky o ban do nao -> tu lay link va dua ve dung o */
+  const onMapPaste = (k: "mapUrl" | "mapEmbedUrl", v: string) => {
+    if (looksLikeIframe(v)) {
+      const src = normalizeMapEmbed(v);
+      setS((x) => ({ ...x, mapEmbedUrl: src, ...(k === "mapUrl" ? { mapUrl: "" } : {}) }));
+      toast(isMapEmbedUrl(src) ? "Đã lấy link bản đồ từ mã nhúng" : "Mã nhúng chưa đúng – hãy chép lại từ Google Maps", isMapEmbedUrl(src) ? "success" : "error");
+      return;
+    }
+    set(k, v);
+  };
 
   const save = () =>
     start(async () => {
@@ -102,13 +118,46 @@ export function SettingsForm({ initial, readOnly }: { initial: StoreSettings; re
           <span className="text-[12px] font-normal text-muted">Để trống thì web hiện “Địa chỉ tiệm – chờ xác nhận”.</span>
         </label>
         <label className={label}>
-          Link chỉ đường (Google Maps)
-          <input {...text("mapUrl")} type="url" placeholder="https://maps.app.goo.gl/…" className={input} />
+          Bản đồ nhúng (Google Maps)
+          <textarea
+            value={s.mapEmbedUrl ?? ""}
+            onChange={(e) => onMapPaste("mapEmbedUrl", e.target.value)}
+            disabled={readOnly}
+            rows={3}
+            spellCheck={false}
+            placeholder='Dán nguyên mã <iframe src="https://www.google.com/maps/embed?…"></iframe>'
+            className={`${input} min-h-[92px] resize-y py-2.5 font-mono text-[12px] leading-relaxed`}
+          />
+          <span className="text-[12px] font-normal text-muted">Google Maps → tìm tiệm → Chia sẻ → Nhúng bản đồ → Sao chép HTML, rồi dán vào đây (dán cả mã cũng được).</span>
         </label>
+        {s.mapEmbedUrl?.trim() && !embedOk && (
+          <p role="alert" className="m-0 rounded-2xl bg-rose px-4 py-3 text-[13px] font-semibold text-accent">Mã này chưa phải bản đồ nhúng của Google Maps – hãy chép lại đúng mục “Nhúng bản đồ”.</p>
+        )}
+        {embedOk && (
+          <div className="relative aspect-[16/9] overflow-hidden rounded-[18px] border border-maroon/10 bg-sand">
+            <iframe title="Xem trước bản đồ" src={embed} className="absolute inset-0 h-full w-full border-0" loading="lazy" referrerPolicy="strict-origin-when-cross-origin" />
+          </div>
+        )}
         <label className={label}>
-          Link bản đồ nhúng
-          <input {...text("mapEmbedUrl")} type="url" placeholder="https://www.google.com/maps/embed?pb=…" className={input} />
-          <span className="text-[12px] font-normal text-muted">Google Maps → Chia sẻ → Nhúng bản đồ → chép phần trong src=&quot;…&quot;.</span>
+          Link chỉ đường (không bắt buộc)
+          <input
+            value={s.mapUrl ?? ""}
+            onChange={(e) => onMapPaste("mapUrl", e.target.value)}
+            disabled={readOnly}
+            type="text"
+            inputMode="url"
+            placeholder="https://maps.app.goo.gl/…"
+            className={input}
+          />
+          <span className="text-[12px] font-normal text-muted">
+            Để trống: nút “Chỉ đường” tự mở đúng vị trí tiệm theo bản đồ nhúng.
+            {directions && !s.mapUrl?.trim() && (
+              <>
+                {" "}
+                <a href={directions} target="_blank" rel="noopener noreferrer" className="font-semibold">Thử mở</a>
+              </>
+            )}
+          </span>
         </label>
       </section>
 
@@ -135,7 +184,7 @@ export function SettingsForm({ initial, readOnly }: { initial: StoreSettings; re
 
       {error && <p role="alert" className="m-0 rounded-2xl bg-rose px-4 py-3 text-[14px] font-semibold text-accent">{error}</p>}
       {!readOnly && (
-        <div className="sticky bottom-[76px] z-10 lg:static">
+        <div className="sticky bottom-[calc(12px+env(safe-area-inset-bottom))] z-10">
           <button type="submit" disabled={pending} className={`${btn.primary} min-h-[52px] w-full text-base sm:w-auto sm:px-10`}>{pending ? "Đang lưu…" : "Lưu cài đặt"}</button>
         </div>
       )}

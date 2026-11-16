@@ -7,11 +7,14 @@ import {
   MobileCartBar,
   type PriceMap,
 } from "@/components/layout/mobile-cart-bar";
+import { PageTransition } from "@/components/motion/page-transition";
 import { ScrollAnimations } from "@/components/motion/scroll-animations";
 import { SmoothScroll } from "@/components/motion/smooth-scroll";
 import { CartProvider } from "@/modules/cart/cart-context";
+import { CustomerProvider } from "@/modules/customers/customer-context";
 import { StoreInfoProvider } from "@/components/brand/store-info-context";
-import { productsRepository } from "@/modules/products/repository";
+import { drinksRepository, productsRepository } from "@/modules/products/repository";
+import type { SearchItem } from "@/components/layout/search-panel";
 import { getStoreInfo } from "@/modules/settings/store-info-server";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -30,10 +33,18 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [products, store] = await Promise.all([
+  const [products, store, drinks] = await Promise.all([
     productsRepository.list(),
     getStoreInfo(),
+    drinksRepository.list().catch(() => []),
   ]);
+  // Du lieu gon cho o tim kiem tren thanh menu (tim ngay trong trinh duyet, khong goi lai server)
+  const searchItems: SearchItem[] = [
+    ...products.map((p) => ({ kind: "banh" as const, id: p.id, name: p.name, sub: p.tagline ?? p.description, priceVnd: p.variants?.[0]?.priceVnd ?? p.priceVnd, href: `/san-pham/${p.slug}`, img: p.cover })),
+    ...drinks
+      .filter((d) => d.isActive !== false)
+      .map((d) => ({ kind: "nuoc" as const, id: d.id, name: d.name, sub: d.description, priceVnd: d.priceMVnd, href: `/do-uong#nuoc-${d.group}`, img: null })),
+  ];
   const prices: PriceMap = Object.fromEntries(
     products.map((p) => [
       p.id,
@@ -51,12 +62,15 @@ export default async function RootLayout({
         <StoreInfoProvider value={store}>
           <SmoothScroll>
             <CartProvider>
-              <SiteHeader />
-              {children}
-              <MobileCartBar prices={prices} />
-              <CartToast />
+              <CustomerProvider>
+                <SiteHeader searchItems={searchItems} />
+                {children}
+                <MobileCartBar prices={prices} />
+                <CartToast />
+              </CustomerProvider>
             </CartProvider>
             <ScrollAnimations />
+            <PageTransition />
           </SmoothScroll>
         </StoreInfoProvider>
       </body>

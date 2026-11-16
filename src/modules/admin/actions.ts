@@ -2,6 +2,7 @@
 
 import { revalidatePath, revalidateTag } from "next/cache";
 import { z } from "zod";
+import { isMapEmbedUrl, looksLikeIframe, normalizeMapEmbed } from "@/modules/settings/map";
 import { MEDIA_MAX_BYTES, MEDIA_MAX_ITEMS, MEDIA_TYPES, formatMb, isMediaMime } from "@/lib/media-rules";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
 import { storeConfig } from "@/lib/store-config";
@@ -323,8 +324,15 @@ const settingsSchema = z
     closeTime: optTime("Giờ đóng cửa chưa đúng (HH:mm)"),
     freshBatchTime: optTime("Giờ mẻ bánh chưa đúng (HH:mm)"),
     address: optText(200, "Địa chỉ tối đa 200 ký tự"),
-    mapUrl: optUrl("https://", "Link chỉ đường phải bắt đầu bằng https://"),
-    mapEmbedUrl: optUrl("https://www.google.com/maps/embed", "Link bản đồ nhúng phải bắt đầu bằng https://www.google.com/maps/embed"),
+    mapUrl: z.preprocess(
+      (v) => (typeof v === "string" && looksLikeIframe(v) ? "<iframe>" : v),
+      optUrl("https://", "Link chỉ đường phải bắt đầu bằng https:// (mã <iframe> dán vào ô Bản đồ nhúng)"),
+    ),
+    // Chap nhan ca ma <iframe …> lan link src; chi luu link https://www.google.com/maps/embed?…
+    mapEmbedUrl: z.preprocess(
+      (v) => (typeof v === "string" ? normalizeMapEmbed(v) : v),
+      optText(1000, "Mã bản đồ quá dài").refine((v) => v === null || isMapEmbedUrl(v), "Bản đồ nhúng chưa đúng – dán mã <iframe> từ Google Maps → Chia sẻ → Nhúng bản đồ"),
+    ),
     bankName: optText(80, "Tên ngân hàng tối đa 80 ký tự"),
     bankAccountNo: optText(30, "Số tài khoản tối đa 30 ký tự").refine((v) => v === null || /^[0-9 ]+$/.test(v), "Số tài khoản chỉ gồm chữ số"),
     bankAccountName: optText(80, "Tên chủ tài khoản tối đa 80 ký tự"),
@@ -348,6 +356,8 @@ export async function saveSettingsAction(raw: unknown): Promise<ActionResult> {
     await logAudit(user, "settings.update", "settings", "store_info", { ordering: parsed.data.orderingEnabled });
     revalidateTag(SETTINGS_TAG);
     revalidatePath("/", "layout");
+    // Cac trang tinh co hien dia chi / ban do: lam moi chac chan (khong phu thuoc cach Next gom route group)
+    for (const path of ["/", "/ghe-tiem", "/thuc-don", "/do-uong", "/gio-hang", "/chinh-sach-bao-mat"]) revalidatePath(path);
     return { ok: true };
   } catch (err) {
     return fail(err);

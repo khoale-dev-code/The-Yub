@@ -7,6 +7,7 @@ import { formatVnd } from "@/lib/format";
 import { PICKUP_DATE_COUNT, formatPickupDate, getPickupDateOptions, pickupSlotLabel, pickupSlots, type PickupDateOption } from "@/lib/pickup";
 import { useStoreInfo } from "@/components/brand/store-info-context";
 import { lineKey, useCart } from "@/modules/cart/cart-context";
+import { useCustomer } from "@/modules/customers/customer-context";
 import { createOrderAction } from "@/modules/orders/actions";
 import { customerSchema } from "@/modules/orders/schema";
 import { paymentHints, paymentLabels, type OrderReceipt, type PaymentMethod } from "@/modules/orders/types";
@@ -30,13 +31,14 @@ const inputCls = "min-h-[52px] rounded-[14px] border border-maroon/30 bg-card px
 
 interface CartCheckoutProps {
   products: Product[];
-  /** 2 = vao thang buoc "Thông tin nhận" (tu trang /dat-banh) */
+  /** 2 = vao thang buoc "Thông tin nhận" (link ?buoc=thong-tin) */
   initialStep?: 1 | 2;
 }
 
 export function CartCheckout({ products, initialStep = 1 }: CartCheckoutProps) {
   const store = useStoreInfo();
   const cart = useCart();
+  const customer = useCustomer();
   const [step, setStep] = useState<Step>(initialStep);
   const [dates, setDates] = useState<PickupDateOption[]>([]);
   const [payment, setPayment] = useState<PaymentMethod>("cod");
@@ -48,6 +50,18 @@ export function CartCheckout({ products, initialStep = 1 }: CartCheckoutProps) {
   const topRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => setDates(getPickupDateOptions(PICKUP_DATE_COUNT)), []);
+
+  // Khach da dang nhap: dien san ten + SDT (chi khi o dang trong, khong ghi de cai khach vua go)
+  useEffect(() => {
+    const form = formRef.current;
+    if (!form || !customer.loggedIn) return;
+    const fill = (name: string, value: string | null) => {
+      const el = form.elements.namedItem(name);
+      if (el instanceof HTMLInputElement && !el.value && value) el.value = value;
+    };
+    fill("name", customer.name);
+    fill("phone", customer.phone);
+  }, [customer.loggedIn, customer.name, customer.phone, step]);
   useEffect(() => {
     if (dates.length && !dates.some((d) => d.value === cart.pickup.date)) {
       const fallback = dates[1] ?? dates[0];
@@ -317,6 +331,7 @@ export function CartCheckout({ products, initialStep = 1 }: CartCheckoutProps) {
 }
 
 function Confirmation({ receipt, onRestart }: { receipt: OrderReceipt; onRestart: () => void }) {
+  const customerLoggedIn = useCustomer().loggedIn;
   const lookup = `/don-hang/${encodeURIComponent(receipt.code)}?t=${receipt.accessToken}`;
   return (
     <div className="w-full px-4 pb-28 pt-14 sm:px-6 md:pt-[72px]">
@@ -348,7 +363,11 @@ function Confirmation({ receipt, onRestart }: { receipt: OrderReceipt; onRestart
       </div>
       <div className="mx-auto mt-7 flex max-w-[680px] flex-wrap justify-center gap-3">
         <Link href="/" className="inline-flex min-h-[54px] items-center rounded-full bg-maroon px-7 font-semibold text-cream no-underline hover:bg-accent hover:text-cream">Về trang chủ</Link>
-        <Link href={lookup} className="inline-flex min-h-[54px] items-center rounded-full border border-maroon px-7 font-semibold text-maroon no-underline hover:bg-maroon hover:text-cream">Lưu link tra cứu đơn</Link>
+        {customerLoggedIn ? (
+          <Link href="/tai-khoan" className="inline-flex min-h-[54px] items-center rounded-full border border-maroon px-7 font-semibold text-maroon no-underline hover:bg-maroon hover:text-cream">Xem đơn trong Tài khoản</Link>
+        ) : (
+          <Link href={lookup} className="inline-flex min-h-[54px] items-center rounded-full border border-maroon px-7 font-semibold text-maroon no-underline hover:bg-maroon hover:text-cream">Lưu link tra cứu đơn</Link>
+        )}
         <button type="button" onClick={onRestart} className="min-h-[54px] rounded-full border border-maroon/40 bg-transparent px-7 text-base font-semibold text-maroon hover:border-maroon">Đặt thêm đơn khác</button>
       </div>
     </div>

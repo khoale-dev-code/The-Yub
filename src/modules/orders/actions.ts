@@ -1,5 +1,7 @@
 "use server";
 
+import { customersRepository } from "@/modules/customers/repository";
+import { getCustomer } from "@/modules/customers/session";
 import { orderInputSchema } from "./schema";
 import { createOrder } from "./service";
 import { toReceipt, type OrderReceipt } from "./types";
@@ -17,7 +19,10 @@ export async function createOrderAction(raw: unknown): Promise<CreateOrderResult
     return { ok: false, error: first ? first.message : "Thông tin đặt bánh chưa hợp lệ." };
   }
   try {
-    const order = await createOrder(parsed.data);
+    // Khach dang nhap: gan don vao tai khoan (id lay tu phien o server, khong tu request)
+    const me = await getCustomer();
+    const order = await createOrder(parsed.data, { customerId: me?.id ?? null });
+    if (me && !me.phone) await customersRepository().fillPhoneIfEmpty(me.id, parsed.data.customer.phone).catch(() => undefined);
     return { ok: true, receipt: toReceipt(order) };
   } catch (err) {
     return {

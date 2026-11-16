@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useStoreInfo } from "@/components/brand/store-info-context";
 import { ArrowRightIcon } from "../ui/icons";
-import { TornWave } from "../ui/torn-wave";
+import { WaveEdge } from "../ui/wave-edge";
 import { HERO_AUTOPLAY_MS, type HeroSlide } from "./hero-carousel";
 
 /** Hero cho dien thoai: anh tran vien tu chuyen sau 3 giay, the gia doi theo anh (Mobile-v2). */
@@ -54,14 +54,14 @@ export function MobileHero({ slides }: { slides: HeroSlide[] }) {
           {slide.note && <span className="relative text-xs font-medium">{slide.note}</span>}
         </div>
         )}
-        <div className="absolute inset-x-5 bottom-[58px] flex flex-col gap-3.5 text-cream">
+        <div className="absolute inset-x-5 bottom-[78px] z-[2] flex flex-col gap-3.5 text-cream">
           <h1 className={`m-0 text-balance font-display text-[40px] font-semibold leading-[1.08] tracking-[-0.015em] text-white transition-opacity duration-500 [text-shadow:0_2px_24px_rgba(0,0,0,0.35)] ${slide.brand ? "opacity-0" : "opacity-100"}`}>
             Giòn rụm, thơm bơ, ra lò mỗi chiều.
           </h1>
           <p className={`m-0 text-base text-cream/92 transition-opacity duration-500 [text-shadow:0_1px_12px_rgba(0,0,0,0.35)] ${slide.brand ? "opacity-0" : "opacity-100"}`}>Bánh nướng theo mẻ nhỏ, cà phê pha khi bạn tới. Hẹn giờ online, ghé lấy khi bánh còn ấm.</p>
           <div className="mt-1.5 grid grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] gap-2.5">
             <Link href="/thuc-don" className="flex min-h-[52px] items-center justify-center gap-1.5 rounded-full bg-cream px-3 text-[15px] font-semibold text-maroon no-underline hover:text-maroon">Xem thực đơn <ArrowRightIcon /></Link>
-            <Link href="/dat-banh" className="flex min-h-[52px] items-center justify-center rounded-full border-[1.5px] border-cream/75 px-3 text-[15px] font-semibold text-cream no-underline hover:text-butter">Đặt trước</Link>
+            <Link href="/thuc-don" className="flex min-h-[52px] items-center justify-center rounded-full border-[1.5px] border-cream/75 px-3 text-[15px] font-semibold text-cream no-underline hover:text-butter">Đặt trước</Link>
           </div>
           <div aria-hidden="true" className="flex justify-center gap-1.5 pt-1">
             {slides.map((s, i) => (
@@ -69,7 +69,7 @@ export function MobileHero({ slides }: { slides: HeroSlide[] }) {
             ))}
           </div>
         </div>
-        <TornWave fill="#FBF3E3" className="absolute -bottom-px left-0 h-[34px]" />
+        <WaveEdge fill="#FBF3E3" />
       </div>
     </section>
   );

@@ -32,7 +32,7 @@ export function AdminToaster() {
   }, []);
 
   return (
-    <div aria-live="polite" className="pointer-events-none fixed inset-x-3 bottom-[88px] z-[90] flex flex-col items-center gap-2 lg:inset-x-auto lg:bottom-6 lg:right-6 lg:items-end">
+    <div aria-live="polite" className="pointer-events-none fixed inset-x-3 bottom-[calc(16px+env(safe-area-inset-bottom))] z-[90] flex flex-col items-center gap-2 lg:inset-x-auto lg:bottom-6 lg:right-6 lg:items-end">
       {items.map((t) => (
         <div
           key={t.id}

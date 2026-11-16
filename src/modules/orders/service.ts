@@ -65,7 +65,7 @@ export function orderErrorMessage(err: unknown): never {
  * Tao don. Khach dat tren web: kiem tra "tam ngung nhan don".
  * Tiem tao ho khach (Admin, don goi dien/inbox): bo qua kiem tra tam ngung.
  */
-export async function createOrder(input: OrderInput, opts: { byAdmin?: boolean } = {}): Promise<Order> {
+export async function createOrder(input: OrderInput, opts: { byAdmin?: boolean; customerId?: string | null } = {}): Promise<Order> {
   if (!opts.byAdmin) {
     const settings = await settingsRepository.getFresh();
     if (!settings.orderingEnabled) {
@@ -86,6 +86,7 @@ export async function createOrder(input: OrderInput, opts: { byAdmin?: boolean }
       note: input.note ?? "",
       items,
       totalVnd: items.reduce((sum, i) => sum + i.lineTotalVnd, 0),
+      customerId: opts.byAdmin ? null : (opts.customerId ?? null),
     });
   } catch (err) {
     if (err instanceof OrderCreateError) {

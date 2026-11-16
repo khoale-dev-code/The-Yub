@@ -83,7 +83,7 @@ export default async function SanPhamPage({ params }: { params: Promise<Params> 
             <StatusBadge status={product.status} className="self-start text-[13px]" />
             <div className="flex items-start justify-between gap-3">
               <h1 className="m-0 font-display text-[38px] font-semibold leading-[1.05] tracking-[-0.015em] sm:text-5xl">{product.name}</h1>
-              <FavoriteButton name={product.name} variant="outline" />
+              <FavoriteButton productId={product.id} name={product.name} variant="outline" />
             </div>
             <p className="m-0 max-w-[480px] text-[17px] text-muted">{product.description}</p>
           </div>

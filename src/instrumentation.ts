@@ -22,10 +22,11 @@ const ROUTES = [
   "/",
   "/thuc-don",
   "/do-uong",
-  "/dat-banh",
   "/gio-hang",
-  "/cau-chuyen",
   "/ghe-tiem",
+  "/yeu-thich",
+  "/dang-nhap",
+  "/admin/khach-hang",
 ];
 
 export async function register() {

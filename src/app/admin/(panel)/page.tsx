@@ -51,7 +51,7 @@ export default async function AdminDashboardPage() {
       )}
 
       {/* Số liệu */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+      <div data-admin-stagger className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
         {stats.map((st) => (
           <Link
             key={st.label}

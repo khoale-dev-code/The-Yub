@@ -20,6 +20,14 @@ const nextConfig: NextConfig = {
     minimumCacheTTL: 2_678_400,
     remotePatterns: supabaseImages(),
   },
+  // Trang "Đặt bánh online" da bo – dat truoc qua Thuc don + Gio hang (chon ngay, khung gio)
+  async redirects() {
+    return [
+      { source: "/dat-banh", destination: "/thuc-don", permanent: true },
+      // Trang Cau chuyen da bo (noi dung chinh nam o trang chu)
+      { source: "/cau-chuyen", destination: "/", permanent: false },
+    ];
+  },
   experimental: {
     // Trinh duyet giu trang vua xem 30 giay (trang tai truoc qua menu: 3 phut) -> quay lai la hien ngay,
     // khong hien khung cho. Moi thao tac sua / xoa / doi trang thai van xoa bo nho nay ngay (revalidatePath),

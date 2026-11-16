@@ -57,10 +57,8 @@ export function DrinkBoard({ drinks, groups, variant = "dark" }: { drinks: Drink
 
   return (
     <div className="relative flex min-w-0 flex-[1_1_520px] flex-col gap-7 overflow-hidden rounded-[28px] bg-dark px-6 pb-9 pt-9 text-cream sm:px-11 sm:pt-11">
-      <svg aria-hidden="true" className="pointer-events-none absolute inset-0 h-full w-full opacity-20 mix-blend-overlay">
-        <filter id="yub-grain-d"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves={2} stitchTiles="stitch" /></filter>
-        <rect width="100%" height="100%" filter="url(#yub-grain-d)" />
-      </svg>
+      {/* Hat nhieu (anh PNG lap lai) – nhe hon nhieu so voi filter SVG + mix-blend khi cuon */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[url(/images/brand/grain.png)] bg-[length:160px_160px] opacity-60" />
       <div className="relative flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
         <h3 className="m-0 font-display text-[32px] font-semibold leading-[1.2]">Thực đơn đồ uống</h3>
         <span className="text-[13px] text-cream/75">Mở cửa {store.openHours}</span>

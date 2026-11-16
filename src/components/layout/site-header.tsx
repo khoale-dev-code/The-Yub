@@ -1,31 +1,114 @@
 "use client";
 
+import gsap from "gsap";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { usePathname } from "next/navigation";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { brandImages } from "@/lib/images";
 import { useStoreInfo } from "@/components/brand/store-info-context";
 import { useCart } from "@/modules/cart/cart-context";
+import { SHOW_HEADER_EVENT } from "@/modules/cart/cart-fx";
+import { animationsReduced } from "../motion/motion-config";
+import { heartBurst, pop, ripple, squash, wiggle } from "../motion/press-fx";
 import { useLenis } from "../motion/smooth-scroll";
+import { SearchPanel, type SearchItem } from "./search-panel";
 import { AnnouncementBar } from "./announcement-bar";
 import { mainNav } from "./nav-links";
+import { useCustomer } from "@/modules/customers/customer-context";
 import { ArrowRightIcon, BagIcon, CloseIcon, HeartIcon, MenuIcon, SearchIcon, UserIcon } from "../ui/icons";
 
-export function SiteHeader() {
+const useIsoLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
+
+/** Cuon xuong qua moc nay thi thanh menu an di, cuon len la hien lai */
+const HIDE_AFTER_PX = 220;
+
+export function SiteHeader({ searchItems = [] }: { searchItems?: SearchItem[] }) {
   const store = useStoreInfo();
   const { count } = useCart();
-  const [menuOpen, setMenuOpen] = useState(false);
+  const customer = useCustomer();
+  const favCount = customer.favorites.length;
   const pathname = usePathname();
-  const router = useRouter();
+  const accountHref = customer.loggedIn ? "/tai-khoan" : `/dang-nhap?next=${encodeURIComponent(pathname || "/")}`;
   const lenis = useLenis();
+  const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const mobileRef = useRef<HTMLElement | null>(null);
-  const desktopRef = useRef<HTMLElement | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [pillReady, setPillReady] = useState(false);
+  const hoverTimer = useRef(0);
 
-  // Header thu gon khi cuon + ghi chieu cao header dang hien vao --yub-header-h (sticky/anchor dung)
+  const desktopRef = useRef<HTMLElement | null>(null);
+  const mobileRef = useRef<HTMLElement | null>(null);
+  const navRef = useRef<HTMLElement | null>(null);
+  const pillRef = useRef<HTMLSpanElement | null>(null);
+  const linkRefs = useRef<(HTMLAnchorElement | null)[]>([]);
+  const overlayRef = useRef<HTMLDivElement | null>(null);
+  const hiddenRef = useRef(false);
+
+  const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href) || (href === "/thuc-don" && pathname.startsWith("/san-pham")));
+  const activeIdx = mainNav.findIndex((l) => isActive(l.href));
+  const homeIdx = activeIdx >= 0 ? activeIdx : null;
+
+  // ---------------------------------------------------------------- vien mau truot theo chuot (GSAP)
+  /** Chu doi mau theo vi tri THAT cua vien mau (khong doi ngay khi chuot cham) -> khong nhap nhay */
+  const syncColors = useCallback(() => {
+    const pill = pillRef.current;
+    if (!pill) return;
+    const x = Number(gsap.getProperty(pill, "x"));
+    const w = Number(gsap.getProperty(pill, "width"));
+    const visible = Number(gsap.getProperty(pill, "opacity")) > 0.5;
+    const center = x + w / 2;
+    for (const el of linkRefs.current) {
+      if (!el) continue;
+      const on = visible && center >= el.offsetLeft && center <= el.offsetLeft + el.offsetWidth;
+      if ((el.dataset.on === "true") !== on) el.dataset.on = on ? "true" : "false";
+    }
+  }, []);
+
+  const movePill = useCallback(
+    (idx: number | null, instant = false) => {
+      const pill = pillRef.current;
+      const el = idx === null ? null : linkRefs.current[idx];
+      if (!pill) return;
+      if (!el) {
+        gsap.to(pill, { opacity: 0, scale: 0.94, duration: instant ? 0 : 0.3, ease: "power2.out", overwrite: true, onUpdate: syncColors, onComplete: syncColors });
+        return;
+      }
+      const vars = { x: el.offsetLeft, width: el.offsetWidth, opacity: 1, scale: 1 };
+      if (instant || animationsReduced()) {
+        gsap.set(pill, vars);
+        syncColors();
+      } else {
+        gsap.to(pill, { ...vars, duration: 0.6, ease: "power3.out", overwrite: true, onUpdate: syncColors, onComplete: syncColors });
+      }
+    },
+    [syncColors],
+  );
+
+  /** Tre nhe truoc khi di chuyen: luot chuot nhanh qua nhieu muc chi tinh muc dung lai -> khong giat */
+  const schedulePill = useCallback(
+    (idx: number | null, delay: number) => {
+      window.clearTimeout(hoverTimer.current);
+      hoverTimer.current = window.setTimeout(() => movePill(idx), delay);
+    },
+    [movePill],
+  );
+
+  useEffect(() => () => window.clearTimeout(hoverTimer.current), []);
+
+  // Dat vien vao muc dang xem (khi tai trang / doi trang / doi kich thuoc)
+  useIsoLayoutEffect(() => {
+    window.clearTimeout(hoverTimer.current);
+    movePill(homeIdx, true);
+    setPillReady(true);
+    const onResize = () => movePill(homeIdx, true);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [homeIdx, movePill]);
+
+  // ---------------------------------------------------------------- bong khi cuon + chieu cao header cho cac phan sticky
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 48);
+    const onScroll = () => setScrolled(window.scrollY > 24);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     const publish = () => {
@@ -42,8 +125,56 @@ export function SiteHeader() {
     };
   }, []);
 
-  useEffect(() => setMenuOpen(false), [pathname]);
+  // ---------------------------------------------------------------- an khi cuon xuong, hien khi cuon len (Lenis)
+  useEffect(() => {
+    if (!lenis || animationsReduced()) return;
+    const bars = [desktopRef.current, mobileRef.current].filter(Boolean);
+    const setHidden = (hide: boolean) => {
+      if (hiddenRef.current === hide) return;
+      hiddenRef.current = hide;
+      gsap.to(bars, { yPercent: hide ? -130 : 0, duration: hide ? 0.45 : 0.6, ease: hide ? "power3.in" : "expo.out", overwrite: true });
+    };
+    let holdUntil = 0;
+    const onScroll = ({ scroll, direction }: { scroll: number; direction: number }) => {
+      if (scroll < HIDE_AFTER_PX) setHidden(false);
+      else if (direction === 1 && performance.now() > holdUntil) setHidden(true);
+      else if (direction === -1) setHidden(false);
+    };
+    // Them vao gio: hien header de anh bay vao dung icon gio, giu hien mot luc
+    const onShow = (e: Event) => {
+      holdUntil = performance.now() + ((e as CustomEvent<{ holdMs?: number }>).detail?.holdMs ?? 1500);
+      setHidden(false);
+    };
+    lenis.on("scroll", onScroll);
+    window.addEventListener(SHOW_HEADER_EVENT, onShow);
+    return () => {
+      lenis.off("scroll", onScroll);
+      window.removeEventListener(SHOW_HEADER_EVENT, onShow);
+      gsap.set(bars, { yPercent: 0 });
+      hiddenRef.current = false;
+    };
+  }, [lenis]);
 
+  useEffect(() => {
+    setMenuOpen(false);
+    setSearchOpen(false);
+  }, [pathname]);
+
+  // Phim tat: "/" hoac Ctrl/Cmd+K mo tim kiem
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      const typing = t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable);
+      if ((e.key === "/" && !typing) || ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k")) {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  // ---------------------------------------------------------------- menu dien thoai
   useEffect(() => {
     if (!menuOpen) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setMenuOpen(false);
@@ -57,97 +188,152 @@ export function SiteHeader() {
     };
   }, [menuOpen, lenis]);
 
-  const onSearch = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const q = new FormData(e.currentTarget).get("q");
-    const term = typeof q === "string" ? q.trim() : "";
-    router.push(term ? `/thuc-don?q=${encodeURIComponent(term)}#tat-ca` : "/thuc-don#tat-ca");
+  useIsoLayoutEffect(() => {
+    const el = overlayRef.current;
+    if (!menuOpen || !el || animationsReduced()) return;
+    const ctx = gsap.context(() => {
+      gsap.fromTo(el, { clipPath: "circle(0% at 92% 4%)" }, { clipPath: "circle(150% at 92% 4%)", duration: 0.7, ease: "power3.inOut" });
+      gsap.from("[data-menu-item]", { yPercent: 110, opacity: 0, duration: 0.7, ease: "expo.out", stagger: 0.06, delay: 0.25 });
+      gsap.from("[data-menu-foot]", { y: 20, opacity: 0, duration: 0.6, ease: "power2.out", delay: 0.5 });
+    }, el);
+    return () => ctx.revert();
+  }, [menuOpen]);
+
+  // Hieu ung bam: nut gio (lac + song), tim (bung tim nho), tim kiem / tai khoan (nay)
+  const pressCart = (e: React.PointerEvent<HTMLAnchorElement>) => {
+    squash(e.currentTarget);
+    ripple(e.currentTarget, e);
+    wiggle(e.currentTarget.querySelector("[data-fx-icon]"));
+  };
+  const pressHeart = (e: React.PointerEvent<HTMLAnchorElement>) => {
+    pop(e.currentTarget.querySelector("[data-fx-icon]"), 0.6);
+    heartBurst(e.currentTarget);
+  };
+  const pressIcon = (e: React.PointerEvent<HTMLElement>) => {
+    squash(e.currentTarget);
+    ripple(e.currentTarget, e, "rgba(59,15,18,0.12)");
   };
 
-  const isActive = (href: string) =>
-    href === "/" ? pathname === "/" : href === "/dat-banh" ? pathname.startsWith("/dat-banh") || pathname.startsWith("/gio-hang") || pathname.startsWith("/don-hang") : href.startsWith("/") && !href.includes("#") && (pathname.startsWith(href) || (href === "/thuc-don" && pathname.startsWith("/san-pham")));
-
   const cartLabel = `Giỏ hàng, ${count} món`;
-
+  const iconBtn = "relative flex h-11 w-11 flex-none items-center justify-center overflow-hidden rounded-full text-maroon transition-colors hover:bg-maroon/8";
 
   return (
     <>
       <AnnouncementBar />
 
-      {/* Mobile header – nen toi, logo kem */}
-      <header ref={mobileRef} className={`sticky top-0 z-40 flex items-center justify-between gap-2 bg-dark py-2 pl-4 pr-2 transition-shadow duration-300 md:hidden ${scrolled ? "shadow-[0_8px_24px_rgba(36,18,13,0.35)]" : ""}`}>
-        <Link href="/" aria-label="The Yub – Trang chủ" className="block">
-          <Image src={brandImages.logoCream} alt="The Yub – Bakes & More" width={brandImages.logoWidth} height={brandImages.logoHeight} className="h-[42px] w-auto" priority />
-        </Link>
-        <div className="flex items-center">
-          <Link href="/gio-hang" aria-label={cartLabel} data-cart-target className="relative flex h-12 w-12 items-center justify-center text-cream hover:text-butter">
-            <BagIcon />
-            <span data-cart-badge className="absolute right-1 top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-butter px-1 text-[11px] font-bold text-maroon">{count}</span>
+      {/* ------------------------------------------------ Dien thoai: vien thuoc toi noi */}
+      <header ref={mobileRef} className="sticky top-0 z-40 px-3 pt-2 md:hidden">
+        <div className={`flex items-center justify-between rounded-full bg-dark py-1 pl-4 pr-1 transition-shadow duration-300 ${scrolled ? "shadow-[0_12px_28px_-10px_rgba(36,18,13,0.55)]" : ""}`}>
+          <Link href="/" data-transition data-transition-label="Trang chủ" aria-label="The Yub – Trang chủ" className="block">
+            <Image src={brandImages.logoCream} alt="The Yub – Bakes & More" width={brandImages.logoWidth} height={brandImages.logoHeight} className="h-[38px] w-auto" priority />
           </Link>
-          <button type="button" aria-label="Mở menu" aria-expanded={menuOpen} aria-controls="yub-mobile-menu" onClick={() => setMenuOpen(true)} className="flex h-12 w-12 items-center justify-center text-cream">
-            <MenuIcon />
-          </button>
+          <div className="flex items-center">
+            <button type="button" aria-label="Tìm bánh, đồ uống" onPointerDown={pressIcon} onClick={() => setSearchOpen(true)} className="relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-full text-cream">
+              <SearchIcon />
+            </button>
+            <Link href="/gio-hang" aria-label={cartLabel} data-cart-target onPointerDown={pressCart} className="relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-full text-cream hover:text-butter">
+              <span data-fx-icon className="flex"><BagIcon /></span>
+              <span data-cart-badge className="absolute right-1 top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-butter px-1 text-[11px] font-bold text-maroon">{count}</span>
+            </Link>
+            <button type="button" aria-label="Mở menu" aria-expanded={menuOpen} aria-controls="yub-mobile-menu" onClick={() => setMenuOpen(true)} className="flex h-12 w-12 items-center justify-center rounded-full bg-cream/10 text-cream">
+              <MenuIcon />
+            </button>
+          </div>
         </div>
       </header>
 
-      {/* Desktop header */}
-      <header
-        ref={desktopRef}
-        className={`sticky top-0 z-40 hidden transition-[background-color,box-shadow] duration-300 md:block ${scrolled ? "bg-page/92 shadow-[0_10px_30px_-12px_rgba(59,15,18,0.25)] backdrop-blur-md" : "bg-page"}`}
-      >
-        <div className={`mx-auto grid max-w-[1280px] grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4 px-8 transition-[padding] duration-300 ${scrolled ? "py-1.5" : "py-[14px]"}`}>
-          <form role="search" onSubmit={onSearch} className="flex min-h-11 max-w-[260px] items-center gap-2.5 text-muted-2">
-            <SearchIcon />
-            <label htmlFor="yub-search" className="sr-only">Tìm bánh</label>
-            <input id="yub-search" name="q" type="search" placeholder="Tìm bánh, đồ uống…" className="min-w-0 flex-1 border-none bg-transparent py-2 text-sm text-maroon outline-offset-4 placeholder:text-muted-2" />
-          </form>
-          <Link href="/" aria-label="The Yub – Trang chủ" className="block">
-            <Image src={brandImages.logoMaroon} alt="The Yub – Bakes & More" width={brandImages.logoWidth} height={brandImages.logoHeight} className={`w-auto transition-[height] duration-300 ${scrolled ? "h-11" : "h-16"}`} priority />
+      {/* ------------------------------------------------ May tinh: vien thuoc noi, vien mau truot theo chuot */}
+      <header ref={desktopRef} className="sticky top-0 z-40 hidden px-6 pt-3 md:block">
+        <div
+          className={`mx-auto grid max-w-[1240px] grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 rounded-full border border-maroon/8 bg-[#FFFCF6] p-2 transition-shadow duration-300 ${
+            scrolled ? "shadow-[0_18px_40px_-18px_rgba(59,15,18,0.45)]" : "shadow-[0_8px_24px_-16px_rgba(59,15,18,0.3)]"
+          }`}
+        >
+          <Link href="/" data-transition data-transition-label="Trang chủ" aria-label="The Yub – Trang chủ" className="block justify-self-start pl-4">
+            <Image src={brandImages.logoMaroon} alt="The Yub – Bakes & More" width={brandImages.logoWidth} height={brandImages.logoHeight} className="h-11 w-auto" priority />
           </Link>
-          <div className="flex justify-end gap-1">
-            <Link href="/thuc-don" aria-label="Danh sách yêu thích" className="flex h-11 w-11 items-center justify-center"><HeartIcon /></Link>
-            <a href={store.phoneHref} aria-label="Gọi tiệm" className="flex h-11 w-11 items-center justify-center"><UserIcon /></a>
-            <Link href="/gio-hang" aria-label={cartLabel} data-cart-target className="relative flex h-11 w-11 items-center justify-center">
-              <BagIcon />
-              <span data-cart-badge className="absolute right-0.5 top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-maroon px-1 text-[11px] font-bold text-cream">{count}</span>
+
+          <nav ref={navRef} aria-label="Điều hướng chính" onMouseLeave={() => schedulePill(homeIdx, 220)} className="relative flex items-center justify-self-center">
+            <span ref={pillRef} aria-hidden="true" className="pointer-events-none absolute left-0 top-0 h-full w-0 rounded-full bg-maroon opacity-0 shadow-[0_8px_20px_-8px_rgba(59,15,18,0.6)]" />
+            {mainNav.map((l, i) => {
+              const active = i === activeIdx;
+              return (
+                <Link
+                  key={l.href}
+                  ref={(el) => {
+                    linkRefs.current[i] = el;
+                  }}
+                  href={l.href}
+                  data-transition
+                  data-transition-label={l.label}
+                  data-on={active ? "true" : "false"}
+                  aria-current={active ? "page" : undefined}
+                  onMouseEnter={() => schedulePill(i, 70)}
+                  onFocus={() => schedulePill(i, 0)}
+                  onBlur={() => schedulePill(homeIdx, 120)}
+                  className={`relative z-[1] flex h-12 items-center whitespace-nowrap rounded-full px-5 text-[15px] font-semibold text-maroon no-underline transition-colors duration-300 hover:text-maroon data-[on=true]:text-cream data-[on=true]:hover:text-cream lg:px-6 ${
+                    !pillReady && active ? "bg-maroon" : ""
+                  }`}
+                >
+                  {l.label}
+                </Link>
+              );
+            })}
+          </nav>
+
+          <div className="flex items-center gap-0.5 justify-self-end">
+            <button type="button" aria-label="Tìm bánh, đồ uống (phím /)" aria-expanded={searchOpen} aria-haspopup="dialog" onPointerDown={pressIcon} onClick={() => setSearchOpen(true)} className={iconBtn}>
+              <SearchIcon />
+            </button>
+            <Link href="/yeu-thich" aria-label={`Món yêu thích${favCount ? `, ${favCount} món` : ""}`} onPointerDown={pressHeart} className={`${iconBtn} overflow-visible`}>
+              <span data-fx-icon className="flex"><HeartIcon fill={favCount ? "currentColor" : "none"} className={favCount ? "text-accent" : ""} /></span>
+              {favCount > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-accent px-1 text-[11px] font-bold text-cream">{favCount}</span>}
+            </Link>
+            <Link href={accountHref} aria-label={customer.loggedIn ? `Tài khoản của ${customer.name}` : "Đăng nhập"} title={customer.loggedIn ? customer.name : "Đăng nhập"} onPointerDown={pressIcon} className={iconBtn}>
+              {customer.loggedIn && customer.avatar ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={customer.avatar} alt="" width={30} height={30} referrerPolicy="no-referrer" className="h-[30px] w-[30px] rounded-full object-cover ring-2 ring-butter" />
+              ) : customer.loggedIn ? (
+                <span className="flex h-[30px] w-[30px] items-center justify-center rounded-full bg-butter font-display text-[15px] font-semibold text-maroon">{(customer.name.trim()[0] ?? "K").toUpperCase()}</span>
+              ) : (
+                <UserIcon />
+              )}
+            </Link>
+            <Link href="/gio-hang" aria-label={cartLabel} data-cart-target onPointerDown={pressCart} className="relative ml-1 flex h-11 items-center gap-2 overflow-hidden rounded-full bg-maroon pl-4 pr-3 text-[14px] font-semibold text-cream no-underline transition-colors hover:bg-accent hover:text-cream">
+              <span data-fx-icon className="relative flex"><BagIcon /></span>
+              <span className="hidden lg:inline">Giỏ hàng</span>
+              <span data-cart-badge className="flex h-[22px] min-w-[22px] items-center justify-center rounded-full bg-butter px-1.5 text-[12px] font-bold text-maroon">{count}</span>
             </Link>
           </div>
         </div>
-        <nav aria-label="Điều hướng chính" className="border-y border-maroon/15">
-          <div className="mx-auto flex max-w-[1100px] flex-wrap justify-around gap-x-6 px-8 text-[13px] font-semibold uppercase tracking-[0.14em]">
-            {mainNav.map((l) => (
-              <Link key={l.href} href={l.href} aria-current={isActive(l.href) ? "page" : undefined} className={`border-b-2 border-transparent px-1 no-underline transition-[padding] duration-300 aria-[current=page]:border-maroon ${scrolled ? "pb-2 pt-2.5" : "pb-3 pt-[14px]"}`}>
-                {l.label}
-              </Link>
-            ))}
-          </div>
-        </nav>
       </header>
 
-      {/* Mobile menu overlay */}
+      <SearchPanel open={searchOpen} onClose={() => setSearchOpen(false)} items={searchItems} />
+
+      {/* ------------------------------------------------ Menu dien thoai (mo dang vong tron lan ra) */}
       {menuOpen && (
-        <div id="yub-mobile-menu" data-lenis-prevent role="dialog" aria-modal="true" aria-label="Menu" className="fixed inset-0 z-50 flex flex-col overflow-y-auto bg-maroon text-cream md:hidden">
-          <div className="flex items-center justify-between border-b border-cream/15 py-2 pl-4 pr-2">
+        <div ref={overlayRef} id="yub-mobile-menu" data-lenis-prevent role="dialog" aria-modal="true" aria-label="Menu" className="fixed inset-0 z-50 flex flex-col overflow-y-auto bg-maroon text-cream md:hidden">
+          <div className="flex items-center justify-between py-3 pl-7 pr-4">
             <Link href="/" aria-label="The Yub – Trang chủ" className="block">
-              <Image src={brandImages.logoCream} alt="The Yub – Bakes & More" width={brandImages.logoWidth} height={brandImages.logoHeight} className="h-[42px] w-auto" />
+              <Image src={brandImages.logoCream} alt="The Yub – Bakes & More" width={brandImages.logoWidth} height={brandImages.logoHeight} className="h-[38px] w-auto" />
             </Link>
-            <button type="button" aria-label="Đóng menu" onClick={() => setMenuOpen(false)} className="flex h-12 w-12 items-center justify-center text-cream">
+            <button type="button" aria-label="Đóng menu" onClick={() => setMenuOpen(false)} className="flex h-12 w-12 items-center justify-center rounded-full bg-cream/10 text-cream">
               <CloseIcon />
             </button>
           </div>
-          <nav aria-label="Điều hướng chính" className="px-5 pt-3">
+          <nav aria-label="Điều hướng chính" className="px-5 pt-4">
             <ul>
               {mainNav.map((l, i) => (
-                <li key={l.href} className="border-b border-cream/15">
-                  <Link href={l.href} onClick={() => setMenuOpen(false)} className={`flex items-baseline gap-4 py-[13px] no-underline ${isActive(l.href) ? "text-butter" : "text-cream"} hover:text-butter`}>
+                <li key={l.href} className="overflow-hidden border-b border-cream/15">
+                  <Link data-menu-item data-transition data-transition-label={l.label} href={l.href} onClick={() => pathname === l.href && setMenuOpen(false)} aria-current={isActive(l.href) ? "page" : undefined} className={`flex items-baseline gap-4 py-[14px] no-underline ${isActive(l.href) ? "text-butter" : "text-cream"} hover:text-butter`}>
                     <span className="w-[26px] flex-none text-xs font-semibold tracking-[0.08em] text-butter">{String(i + 1).padStart(2, "0")}</span>
-                    <span className="font-display text-[32px] leading-[1.15]">{l.label}</span>
+                    <span className="font-display text-[34px] leading-[1.15]">{l.label}</span>
                   </Link>
                 </li>
               ))}
             </ul>
           </nav>
-          <div className="mt-auto flex flex-col gap-4 px-5 pb-7 pt-5">
+          <div data-menu-foot className="mt-auto flex flex-col gap-4 px-5 pb-7 pt-5">
             <div className="grid grid-cols-2 gap-2.5">
               <div className="flex flex-col rounded-[18px] border border-cream/20 px-3.5 py-3">
                 <span className="text-xs text-cream/75">Mở cửa</span>
@@ -157,6 +343,14 @@ export function SiteHeader() {
                 <span className="text-xs text-cream/75">Bánh ra lò</span>
                 <span className="font-display text-[19px] font-semibold text-butter">{store.freshBatchTime}</span>
               </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2.5">
+              <Link href="/yeu-thich" onClick={() => setMenuOpen(false)} className="flex min-h-[52px] items-center justify-center gap-2 rounded-full border border-cream/30 font-semibold text-cream no-underline hover:text-butter">
+                <HeartIcon size={19} /> Yêu thích{favCount ? ` (${favCount})` : ""}
+              </Link>
+              <Link href={accountHref} onClick={() => setMenuOpen(false)} className="flex min-h-[52px] items-center justify-center gap-2 rounded-full border border-cream/30 font-semibold text-cream no-underline hover:text-butter">
+                <UserIcon size={19} /> {customer.loggedIn ? "Tài khoản" : "Đăng nhập"}
+              </Link>
             </div>
             <Link href="/thuc-don" onClick={() => setMenuOpen(false)} className="flex min-h-[54px] items-center justify-center gap-2 rounded-full bg-butter font-bold text-maroon no-underline hover:text-maroon">
               Đặt bánh ngay <ArrowRightIcon />

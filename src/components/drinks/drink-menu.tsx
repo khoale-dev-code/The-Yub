@@ -196,7 +196,7 @@ export function DrinkMenu({ groups, sizeLExtra }: { groups: DrinkMenuGroup[]; si
       </div>
 
       {/* Thanh chọn nhóm – điện thoại/máy tính bảng */}
-      <div className="sticky top-[var(--yub-header-h)] z-10 -mx-4 border-y border-maroon/10 bg-cream/95 backdrop-blur-md sm:-mx-6 lg:hidden">
+      <div className="sticky top-[var(--yub-header-h)] z-10 -mx-4 border-y border-maroon/10 bg-cream sm:-mx-6 lg:hidden">
         <div ref={chips} data-lenis-prevent className="no-scrollbar flex gap-2 overflow-x-auto px-4 py-2.5 sm:px-6">
           {groups.map((g, i) => (
             <button

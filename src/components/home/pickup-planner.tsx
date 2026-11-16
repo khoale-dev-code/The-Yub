@@ -39,7 +39,7 @@ export function PickupPlanner({ variant = "split" }: { variant?: "split" | "shee
 
   const placeholderDates = Array.from({ length: 4 }, (_, i) => ({ value: `ph-${i}`, top: "…", day: "--/--" }));
   const shownDates = dates.length ? dates : placeholderDates;
-  const ctaHref = count > 0 ? "/gio-hang" : "/dat-banh";
+  const ctaHref = count > 0 ? "/gio-hang" : "/thuc-don";
 
   if (variant === "sheet") {
     return (

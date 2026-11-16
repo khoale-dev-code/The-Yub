@@ -14,6 +14,8 @@ export interface OrderDraft {
   note: string;
   items: (OrderItemSnapshot & { variantId?: string; variantLabel?: string })[];
   totalVnd: number;
+  /** Gan don voi tai khoan khach (lay tu phien dang nhap o server, KHONG tu request) */
+  customerId?: string | null;
 }
 
 export type OrderCreateErrorCode = "SLOT_FULL" | "SLOT_UNAVAILABLE" | "UNKNOWN";
@@ -56,6 +58,10 @@ export interface OrdersRepository {
   remove(code: string): Promise<boolean>;
   /** Cap nhat co dieu kien: chi ghi khi trang thai hien tai van la `expected` (tranh 2 nguoi bam cung luc) */
   update(code: string, expected: { status?: OrderStatus; paymentStatus?: PaymentStatus }, patch: OrderUpdate): Promise<boolean>;
+  /** Don cua 1 khach (moi nhat truoc) */
+  listByCustomer(customerId: string, limit?: number): Promise<Order[]>;
+  /** Khach so huu don (null = don khach vang lai) */
+  customerIdOf(code: string): Promise<string | null>;
 }
 
 const ACTIVE = (s: OrderStatus) => s !== "cancelled" && s !== "rejected";
@@ -107,6 +113,7 @@ const localRepository: OrdersRepository = {
       createdAt: now,
       updatedAt: now,
       paidAt: null,
+      customerId: d.customerId ?? null,
     };
     store().set(order.code, order);
     return order;
@@ -114,6 +121,16 @@ const localRepository: OrdersRepository = {
   async findByCode(code) {
     const o = store().get(code);
     return o ? { ...o } : null;
+  },
+  async listByCustomer(customerId, limit = 100) {
+    return [...store().values()]
+      .filter((o) => o.customerId === customerId)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .slice(0, limit)
+      .map((o) => ({ ...o }));
+  },
+  async customerIdOf(code) {
+    return store().get(code)?.customerId ?? null;
   },
   async list(f) {
     const q = f.q ? sanitizeQuery(f.q).toLowerCase() : "";
@@ -257,9 +274,24 @@ function supabaseRepository(): OrdersRepository | null {
         throw new OrderCreateError("UNKNOWN");
       }
       const row = (data as { order_code: string }[] | null)?.[0];
+      if (row && d.customerId) {
+        // Gan tai khoan khach (cot customer_id – migration 0008). Loi o day khong lam hong don da tao.
+        const { error: linkErr } = await db.from("orders").update({ customer_id: d.customerId }).eq("code", row.order_code).is("customer_id", null);
+        if (linkErr) console.warn("[orders] khong gan duoc tai khoan khach cho don", row.order_code, linkErr.code);
+      }
       const created = row ? await repo.findByCode(row.order_code) : null;
       if (!created) throw new OrderCreateError("UNKNOWN");
       return created;
+    },
+    async listByCustomer(customerId, limit = 100) {
+      const { data, error } = await db.from("orders").select(ORDER_SELECT).eq("customer_id", customerId).order("created_at", { ascending: false }).limit(limit);
+      if (error) throw new Error(`Không tải được đơn của khách (${error.code}).`);
+      return ((data ?? []) as OrderRow[]).map((r) => ({ ...fromRow(r), customerId }));
+    },
+    async customerIdOf(code) {
+      const { data, error } = await db.from("orders").select("customer_id").eq("code", code).maybeSingle();
+      if (error) return null; // chua chay migration 0008 -> coi nhu khach vang lai
+      return (data as { customer_id: string | null } | null)?.customer_id ?? null;
     },
     async findByCode(code) {
       const { data, error } = await db.from("orders").select(ORDER_SELECT).eq("code", code).maybeSingle();

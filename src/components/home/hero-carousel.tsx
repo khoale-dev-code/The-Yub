@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { animationsReduced } from "../motion/motion-config";
 import { ArrowRightIcon } from "../ui/icons";
-import { TornWave } from "../ui/torn-wave";
+import { WaveEdge } from "../ui/wave-edge";
 
 export interface HeroSlide {
   /** Anh ngang cho may tinh (khuyen nghi >= 1920x912) */
@@ -71,7 +71,7 @@ export function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
     <section
       aria-roledescription="carousel"
       aria-label="Giới thiệu"
-      className="relative hidden min-h-[760px] items-center justify-center overflow-hidden bg-dark px-6 pb-[150px] pt-24 text-cream md:flex"
+      className="relative hidden min-h-[800px] items-center justify-center overflow-hidden bg-dark px-6 pb-[170px] pt-28 text-cream md:flex"
     >
       <div data-parallax="0.16" className="absolute inset-x-0 -inset-y-[10%]">
       {slides.map((s, i) => (
@@ -94,10 +94,8 @@ export function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
         className={`absolute inset-0 bg-[rgba(28,12,8,0.48)] transition-opacity duration-700 ${slide.brand ? "opacity-0" : "opacity-100"}`}
       />
       <div aria-hidden="true" className="absolute inset-x-0 bottom-0 h-[38%] bg-[linear-gradient(0deg,rgba(28,12,8,0.45),transparent)]" />
-      <svg aria-hidden="true" className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.1] mix-blend-overlay">
-        <filter id="yub-grain"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves={2} stitchTiles="stitch" /></filter>
-        <rect width="100%" height="100%" filter="url(#yub-grain)" />
-      </svg>
+      {/* Hat nhieu (anh PNG lap lai) – nhe hon nhieu so voi filter SVG + mix-blend khi cuon */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[url(/images/brand/grain.png)] bg-[length:160px_160px] opacity-50" />
 
       {slide.brand ? (
         <div ref={textRef} aria-live="polite" className="absolute bottom-[170px] left-[26.5%] z-10 -translate-x-1/2">
@@ -111,9 +109,10 @@ export function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
           <span className="absolute -left-10 -top-11 hidden -rotate-9 rounded-[14px] bg-butter px-5 py-2 font-display text-[22px] font-semibold text-maroon shadow-[0_10px_24px_rgba(0,0,0,0.25)] md:block">
             Giòn rụm
           </span>
-          <h1 key={slide.headline} className="m-0 text-balance font-display text-[clamp(46px,7.4vw,108px)] font-semibold leading-[1.02] tracking-[-0.02em] [text-shadow:0_2px_30px_rgba(0,0,0,0.3)]">
+          <h1 key={slide.headline} className="m-0 text-balance font-display text-[clamp(46px,6.8vw,100px)] font-semibold leading-[1.02] tracking-[-0.02em] [text-shadow:0_2px_30px_rgba(0,0,0,0.3)]">
             {slide.headline.split("\n").map((line) => (
-              <span key={line} className="block overflow-hidden pb-[0.06em]">
+              /* Mat na co dem tren/duoi: khong cat net chu g, y, p va dau tieng Viet */
+              <span key={line} className="-my-[0.16em] block overflow-hidden py-[0.2em]">
                 <span data-line className="block">{line}</span>
               </span>
             ))}
@@ -134,7 +133,12 @@ export function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
         </div>
       )}
 
-      <div className="absolute inset-x-0 bottom-[78px] flex items-center justify-center gap-1">
+      {/* Dieu khien slide: goc trai duoi (doi xung voi the gia ben phai) -> khong de len nut CTA o giua */}
+      <div className="absolute bottom-[clamp(118px,10.5vw,176px)] left-[6%] z-[2] flex items-center gap-1">
+        <span aria-hidden="true" className="mr-2 font-display text-[15px] font-semibold tabular-nums text-cream/90">
+          {String(idx + 1).padStart(2, "0")}
+          <span className="text-cream/50"> / {String(slides.length).padStart(2, "0")}</span>
+        </span>
         {slides.map((s, i) => (
           <button key={s.img} type="button" onClick={() => go(i)} aria-label={`Slide ${i + 1}`} aria-current={i === idx} className="flex h-11 w-11 items-center justify-center p-0">
             <span className={`relative block h-2 overflow-hidden rounded-full transition-[width] duration-300 ${i === idx ? "w-10 bg-cream/35" : "w-2 bg-cream/55 hover:bg-cream"}`}>
@@ -146,7 +150,7 @@ export function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
         ))}
       </div>
 
-      <TornWave fill="#FBF3E3" className="absolute -bottom-px left-0" />
+      <WaveEdge fill="#FBF3E3" />
     </section>
   );
 }

@@ -10,6 +10,7 @@ import { useStoreInfo } from "@/components/brand/store-info-context";
 import type { Category } from "@/modules/categories/types";
 import type { Product, ProductCategory, ProductStatus } from "@/modules/products/types";
 import { AddToCartButton } from "../add-to-cart-button";
+import { FavoriteButton } from "../favorite-button";
 import { motionConfig } from "../motion/motion-config";
 import { useLenis } from "../motion/smooth-scroll";
 import { SearchIcon } from "../ui/icons";
@@ -334,10 +335,13 @@ function CatalogCard({ product: p }: { product: Product }) {
   const href = `/san-pham/${p.slug}`;
   return (
     <article className="flex flex-col overflow-hidden rounded-[18px] border border-maroon/10 bg-card sm:rounded-[22px]">
-      <Link href={href} aria-label={`Xem ${p.name}`} className="group relative block h-40 overflow-hidden bg-beige sm:h-auto sm:aspect-[1/0.92]">
-        <Image src={p.cover} alt={p.name} fill sizes="(min-width: 1024px) 300px, 50vw" className={`object-cover transition-transform duration-500 group-hover:scale-[1.03] ${soldOut ? "opacity-55" : ""}`} style={{ objectPosition: p.imagePosition ?? "center" }} />
-        <span className={`absolute left-2 top-2 rounded-full px-2.5 py-0.5 text-[11px] font-semibold sm:left-3 sm:top-3 sm:px-3 sm:py-1 sm:text-xs ${meta.className}`}>{productStatusLabel(p.status, store.freshBatchTime)}</span>
-      </Link>
+      <div className="relative h-40 overflow-hidden bg-beige sm:h-auto sm:aspect-[1/0.92]">
+        <Link href={href} aria-label={`Xem ${p.name}`} className="group absolute inset-0 block">
+          <Image src={p.cover} alt={p.name} fill sizes="(min-width: 1024px) 300px, 50vw" className={`object-cover transition-transform duration-500 group-hover:scale-[1.03] ${soldOut ? "opacity-55" : ""}`} style={{ objectPosition: p.imagePosition ?? "center" }} />
+        </Link>
+        <span className={`pointer-events-none absolute left-2 top-2 rounded-full px-2.5 py-0.5 text-[11px] font-semibold sm:left-3 sm:top-3 sm:px-3 sm:py-1 sm:text-xs ${meta.className}`}>{productStatusLabel(p.status, store.freshBatchTime)}</span>
+        <FavoriteButton productId={p.id} name={p.name} className="absolute right-1.5 top-1.5 sm:right-2 sm:top-2" />
+      </div>
       <div className="flex grow flex-col gap-0.5 px-2.5 pb-3 pt-2.5 sm:px-[18px] sm:pb-[18px] sm:pt-4">
         <Link href={href} className="no-underline">
           <h3 className="m-0 font-display text-base font-semibold leading-[1.3] sm:text-xl sm:leading-[1.25]">{p.name}</h3>
