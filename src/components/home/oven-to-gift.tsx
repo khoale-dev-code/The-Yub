@@ -156,7 +156,7 @@ export function OvenToGift() {
             <li key={s.img} data-step-card className="flex flex-col gap-5 md:mx-auto md:w-full md:max-w-[500px]">
               <div data-step-img className={`relative w-full overflow-hidden rounded-[22px] md:rounded-[28px] ${s.ratio}`}>
                 <Image src={s.img} alt={s.alt} fill sizes="(min-width: 768px) 500px, 100vw" className="object-cover" />
-                <span className="absolute bottom-4 left-4 inline-flex items-center gap-2 rounded-full bg-dark/55 px-3.5 py-2 text-[13px] font-semibold text-cream backdrop-blur-md">
+                <span className="absolute bottom-4 left-4 inline-flex items-center gap-2 rounded-full bg-dark/80 px-3.5 py-2 text-[13px] font-semibold text-cream">
                   <span className="text-butter">{pad(i + 1)}</span>
                   <span aria-hidden="true" className="h-3 w-px bg-cream/30" />
                   {s.title}

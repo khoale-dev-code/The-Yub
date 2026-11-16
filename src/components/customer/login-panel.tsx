@@ -187,7 +187,7 @@ function ConsentDialog({ open, onClose, storeName, mode, next }: { open: boolean
   // Gan vao <body> (portal): thoat khoi lop xep chong cua header / trang -> luon phu tren cung
   return createPortal(
     <div ref={rootRef} className="invisible fixed inset-0 z-[85] flex items-end justify-center opacity-0 sm:items-center sm:p-6" role="dialog" aria-modal="true" aria-labelledby="consent-title">
-      <button type="button" tabIndex={-1} aria-hidden="true" onClick={() => !pending && onClose()} className="absolute inset-0 border-0 bg-dark/50 backdrop-blur-[3px]" />
+      <button type="button" tabIndex={-1} aria-hidden="true" onClick={() => !pending && onClose()} className="absolute inset-0 border-0 bg-dark/55 md:backdrop-blur-[3px]" />
       <div ref={sheetRef} data-lenis-prevent className="relative flex max-h-[92dvh] w-full max-w-[520px] flex-col overflow-y-auto rounded-t-[28px] bg-page px-5 pb-[calc(20px+env(safe-area-inset-bottom))] pt-3 text-left shadow-[0_-20px_50px_-20px_rgba(36,18,13,0.6)] sm:rounded-[28px] sm:px-7 sm:pb-7 sm:pt-6">
         <span aria-hidden="true" className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-maroon/15 sm:hidden" />
         <div className="mb-4 flex items-start justify-between gap-3">

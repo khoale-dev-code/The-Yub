@@ -4,7 +4,7 @@ import gsap from "gsap";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { CART_ADDED_EVENT, type CartAddedDetail } from "@/modules/cart/cart-fx";
+import { CART_ADDED_EVENT, clearCartFx, type CartAddedDetail } from "@/modules/cart/cart-fx";
 import { useCart } from "@/modules/cart/cart-context";
 import { CheckIcon, CloseIcon } from "../ui/icons";
 
@@ -27,7 +27,11 @@ export function CartToast() {
     return () => window.removeEventListener(CART_ADDED_EVENT, onAdd);
   }, []);
 
-  useEffect(() => setItem(null), [pathname]);
+  // Doi trang: dong thong bao + don cac hieu ung bay vao gio con sot
+  useEffect(() => {
+    setItem(null);
+    clearCartFx();
+  }, [pathname]);
 
   useEffect(() => {
     if (!item) return;

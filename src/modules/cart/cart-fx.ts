@@ -35,6 +35,7 @@ function pulseCart(target: HTMLElement, qty: number) {
   const r = target.getBoundingClientRect();
   const plus = document.createElement("span");
   plus.setAttribute("aria-hidden", "true");
+  plus.dataset.yubFx = "";
   plus.textContent = `+${qty}`;
   Object.assign(plus.style, {
     position: "fixed",
@@ -70,6 +71,7 @@ function flyToCart(source: HTMLElement, imageSrc: string | undefined, target: HT
 
   const ghost = document.createElement("div");
   ghost.setAttribute("aria-hidden", "true");
+  ghost.dataset.yubFx = "";
   Object.assign(ghost.style, {
     position: "fixed",
     left: "0px",
@@ -106,19 +108,86 @@ function flyToCart(source: HTMLElement, imageSrc: string | undefined, target: HT
     setR(t * 30);
   };
 
-  gsap
-    .timeline({
-      onComplete: () => {
-        ghost.remove();
-        pulseCart(target, qty);
-        onLand();
-      },
-    })
+  // Chot an toan: du hieu ung bi ngat (chuyen trang, tab an, may cham) anh bay cung khong bao gio "ket" tren man hinh
+  let landed = false;
+  const land = () => {
+    if (landed) return;
+    landed = true;
+    window.clearTimeout(failsafe);
+    tl.kill();
+    ghost.remove();
+    pulseCart(target, qty);
+    onLand();
+  };
+  const failsafe = window.setTimeout(land, 2500);
+  const tl = gsap
+    .timeline({ onComplete: land })
     .set(ghost, { x: x0, y: y0, scale: 0.4, opacity: 0 })
     .to(ghost, { scale: 1.08, opacity: 1, duration: 0.24, ease: "back.out(2.2)" })
     .to(p, { t: 1, duration: 0.8, ease: "power2.inOut", onUpdate: place }, ">-0.04")
     .to(ghost, { opacity: 0.7, duration: 0.18 }, ">-0.18");
 }
+
+/**
+ * Ban NHE cho dien thoai / man hinh cham: cham tron nho bay thang toi gio.
+ * Tinh diem dich 1 lan (khong do lai bo cuc moi frame), khong xoay, khong bong do,
+ * 1 tween duy nhat chi doi transform -> muot ca tren may yeu.
+ */
+function flyToCartLite(source: HTMLElement, imageSrc: string | undefined, target: HTMLElement, qty: number, onLand: () => void) {
+  const from = source.getBoundingClientRect();
+  const to = target.getBoundingClientRect();
+  const size = 44;
+  const x0 = from.left + from.width / 2 - size / 2;
+  const y0 = from.top + from.height / 2 - size / 2;
+  const x2 = to.left + to.width / 2 - size / 2;
+  // Thanh menu dang an (truot len khi cuon) -> tinh vi tri khi no truot xuong lai
+  const header = target.closest<HTMLElement>("header");
+  const hiddenShift = header ? (-Number(gsap.getProperty(header, "yPercent")) / 100) * header.offsetHeight : 0;
+  const y2 = to.top + to.height / 2 - size / 2 + Math.max(0, hiddenShift);
+
+  const dot = document.createElement("div");
+  dot.setAttribute("aria-hidden", "true");
+  dot.dataset.yubFx = "";
+  Object.assign(dot.style, {
+    position: "fixed",
+    left: "0px",
+    top: "0px",
+    width: `${size}px`,
+    height: `${size}px`,
+    borderRadius: "999px",
+    zIndex: "80",
+    pointerEvents: "none",
+    border: "2px solid #FFFAF1",
+    background: imageSrc ? `#E8A93B center/cover no-repeat url("${imageSrc.replace(/"/g, "%22")}")` : "#E8A93B",
+    transform: `translate3d(${x0}px, ${y0}px, 0)`,
+  } satisfies Partial<CSSStyleDeclaration>);
+  document.body.appendChild(dot);
+
+  let landed = false;
+  const land = () => {
+    if (landed) return;
+    landed = true;
+    window.clearTimeout(failsafe);
+    gsap.killTweensOf(dot);
+    dot.remove();
+    pulseCart(target, qty);
+    onLand();
+  };
+  const failsafe = window.setTimeout(land, 1500);
+  // x di deu, y "vong" len roi roi xuong gio (2 tween song song tren cung 1 phan tu)
+  gsap.fromTo(dot, { x: x0, scale: 0.6 }, { x: x2, scale: 0.45, duration: 0.6, ease: "power1.inOut" });
+  gsap.fromTo(dot, { y: y0 }, { y: y2, duration: 0.6, ease: "back.in(1.4)", onComplete: land });
+}
+
+/** Xoa moi phan tu hieu ung con sot (vd khi doi trang giua chung) */
+export function clearCartFx() {
+  document.querySelectorAll<HTMLElement>("[data-yub-fx]").forEach((el) => {
+    gsap.killTweensOf(el);
+    el.remove();
+  });
+}
+
+const prefersLiteFx = () => window.matchMedia("(pointer: coarse), (max-width: 767.98px)").matches;
 
 /**
  * Goi khi khach bam them vao gio: anh san pham bay vao icon gio, gio "nay",
@@ -133,6 +202,7 @@ export function announceCartAdd(trigger: HTMLElement, detail: Omit<CartAddedDeta
 
   // Header dang an (cuon xuong) -> keo xuong lai de thay gio
   window.dispatchEvent(new CustomEvent(SHOW_HEADER_EVENT, { detail: { holdMs: 1800 } }));
+  clearCartFx();
   const target = visibleCartTarget();
   if (!target) return notify();
   if (animationsReduced()) {
@@ -140,5 +210,6 @@ export function announceCartAdd(trigger: HTMLElement, detail: Omit<CartAddedDeta
     return notify();
   }
   // Thong bao hien ra khi anh vua "roi" vao gio
-  flyToCart(img ?? trigger, image, target, detail.qty, notify);
+  if (prefersLiteFx()) flyToCartLite(img ?? trigger, image, target, detail.qty, notify);
+  else flyToCart(img ?? trigger, image, target, detail.qty, notify);
 }

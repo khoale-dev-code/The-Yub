@@ -124,7 +124,7 @@ export function SearchPanel({ open, onClose, items }: { open: boolean; onClose: 
   // Gan vao <body> (portal): thoat khoi lop xep chong cua header / trang -> luon phu tren cung
   return createPortal(
     <div ref={rootRef} className="invisible fixed inset-0 z-[70] opacity-0" role="dialog" aria-modal="true" aria-label="Tìm kiếm">
-      <button type="button" tabIndex={-1} aria-hidden="true" onClick={onClose} className="absolute inset-0 border-0 bg-dark/40 backdrop-blur-[2px]" />
+      <button type="button" tabIndex={-1} aria-hidden="true" onClick={onClose} className="absolute inset-0 border-0 bg-dark/45 md:backdrop-blur-[2px]" />
       <div
         ref={panelRef}
         data-lenis-prevent

@@ -36,13 +36,16 @@ export function MobileHero({ slides }: { slides: HeroSlide[] }) {
             fill
             priority={i === 0}
             sizes="100vw"
-            className={`object-cover transition-[opacity,transform] ease-out ${i === idx ? "scale-100 opacity-100 duration-[900ms,3600ms]" : "scale-[1.08] opacity-0 duration-[900ms,0ms]"}`}
+            className={`object-cover transition-[opacity,transform] ease-out ${i === idx ? "scale-100 opacity-100 duration-[900ms,3600ms]" : "scale-[1.08] opacity-0 duration-[900ms,0ms]"} ${
+              // Dien thoai: chi giu anh dang hien + anh vua qua (de mo dan) -> it lop ve tren GPU, may yeu khong giat
+              i === idx || i === (idx - 1 + slides.length) % slides.length ? "" : "invisible"
+            }`}
             style={{ objectPosition: s.posMobile ?? "center" }}
           />
         ))}
         {/* Phu toi phia duoi cho chu, giu mau anh phia tren */}
         <div aria-hidden="true" className="absolute inset-0 bg-[linear-gradient(0deg,rgba(28,12,8,0.82)_0%,rgba(28,12,8,0.55)_32%,rgba(28,12,8,0.05)_62%,rgba(28,12,8,0)_100%)]" />
-        <span className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-cream/25 bg-dark/45 px-3.5 py-2 text-[13px] font-semibold text-cream backdrop-blur-md">
+        <span className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-cream/25 bg-dark/75 px-3.5 py-2 text-[13px] font-semibold text-cream">
           <span aria-hidden="true" className="h-2 w-2 rounded-full bg-butter" />
           Mẻ mới ra lò lúc {store.freshBatchTime}
         </span>

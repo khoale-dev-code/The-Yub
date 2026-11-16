@@ -89,7 +89,7 @@ export function StoreMap({
           className={`absolute inset-0 z-[1] flex bg-transparent p-4 text-left ${address ? "items-start justify-end pt-16 sm:pt-4" : "items-end justify-center"}`}
           aria-label="Bấm để di chuyển, phóng to bản đồ"
         >
-          <span className="inline-flex min-h-10 items-center gap-2 rounded-full bg-dark/75 px-4 text-[13px] font-semibold text-cream shadow-lg backdrop-blur-md">
+          <span className="inline-flex min-h-10 items-center gap-2 rounded-full bg-dark/85 px-4 text-[13px] font-semibold text-cream shadow-lg">
             <PinIcon size={16} /> Bấm để di chuyển bản đồ
           </span>
         </button>
