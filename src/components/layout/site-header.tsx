@@ -10,7 +10,8 @@ import { useStoreInfo } from "@/components/brand/store-info-context";
 import { useCart } from "@/modules/cart/cart-context";
 import { SHOW_HEADER_EVENT } from "@/modules/cart/cart-fx";
 import { animationsReduced } from "../motion/motion-config";
-import { heartBurst, pop, ripple, squash, wiggle } from "../motion/press-fx";
+import { bounceUp, heartBurst, pop, ripple, squash, wiggle } from "../motion/press-fx";
+import { CartDrawer, type CartCatalog } from "./cart-drawer";
 import { useLenis } from "../motion/smooth-scroll";
 import { SearchPanel, type SearchItem } from "./search-panel";
 import { AnnouncementBar } from "./announcement-bar";
@@ -23,7 +24,7 @@ const useIsoLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : use
 /** Cuon xuong qua moc nay thi thanh menu an di, cuon len la hien lai */
 const HIDE_AFTER_PX = 220;
 
-export function SiteHeader({ searchItems = [] }: { searchItems?: SearchItem[] }) {
+export function SiteHeader({ searchItems = [], cartCatalog = {} }: { searchItems?: SearchItem[]; cartCatalog?: CartCatalog }) {
   const store = useStoreInfo();
   const { count } = useCart();
   const customer = useCustomer();
@@ -34,6 +35,8 @@ export function SiteHeader({ searchItems = [] }: { searchItems?: SearchItem[] })
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [cartOpen, setCartOpen] = useState(false);
+  const [cartAnchor, setCartAnchor] = useState<HTMLElement | null>(null);
   const [pillReady, setPillReady] = useState(false);
   const hoverTimer = useRef(0);
 
@@ -158,6 +161,7 @@ export function SiteHeader({ searchItems = [] }: { searchItems?: SearchItem[] })
   useEffect(() => {
     setMenuOpen(false);
     setSearchOpen(false);
+    setCartOpen(false);
   }, [pathname]);
 
   // Phim tat: "/" hoac Ctrl/Cmd+K mo tim kiem
@@ -201,9 +205,16 @@ export function SiteHeader({ searchItems = [] }: { searchItems?: SearchItem[] })
 
   // Hieu ung bam: nut gio (lac + song), tim (bung tim nho), tim kiem / tai khoan (nay)
   const pressCart = (e: React.PointerEvent<HTMLAnchorElement>) => {
-    squash(e.currentTarget);
+    bounceUp(e.currentTarget);
     ripple(e.currentTarget, e);
     wiggle(e.currentTarget.querySelector("[data-fx-icon]"));
+  };
+  /** Bam gio: mo gio hang nhanh (khong roi trang). Dang o trang gio hang / Ctrl+click -> giu hanh vi link */
+  const openCart = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0 || pathname.startsWith("/gio-hang")) return;
+    e.preventDefault();
+    setCartAnchor(e.currentTarget);
+    setCartOpen(true);
   };
   const pressHeart = (e: React.PointerEvent<HTMLAnchorElement>) => {
     pop(e.currentTarget.querySelector("[data-fx-icon]"), 0.6);
@@ -231,7 +242,7 @@ export function SiteHeader({ searchItems = [] }: { searchItems?: SearchItem[] })
             <button type="button" aria-label="Tìm bánh, đồ uống" onPointerDown={pressIcon} onClick={() => setSearchOpen(true)} className="relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-full text-cream">
               <SearchIcon />
             </button>
-            <Link href="/gio-hang" aria-label={cartLabel} data-cart-target onPointerDown={pressCart} className="relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-full text-cream hover:text-butter">
+            <Link href="/gio-hang" aria-label={cartLabel} data-cart-target aria-haspopup="dialog" onPointerDown={pressCart} onClick={openCart} className="relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-full text-cream hover:text-butter">
               <span data-fx-icon className="flex"><BagIcon /></span>
               <span data-cart-badge className="absolute right-1 top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-butter px-1 text-[11px] font-bold text-maroon">{count}</span>
             </Link>
@@ -299,7 +310,7 @@ export function SiteHeader({ searchItems = [] }: { searchItems?: SearchItem[] })
                 <UserIcon />
               )}
             </Link>
-            <Link href="/gio-hang" aria-label={cartLabel} data-cart-target onPointerDown={pressCart} className="relative ml-1 flex h-11 items-center gap-2 overflow-hidden rounded-full bg-maroon pl-4 pr-3 text-[14px] font-semibold text-cream no-underline transition-colors hover:bg-accent hover:text-cream">
+            <Link href="/gio-hang" aria-label={cartLabel} data-cart-target aria-haspopup="dialog" onPointerDown={pressCart} onClick={openCart} className="relative ml-1 flex h-11 items-center gap-2 overflow-hidden rounded-full bg-maroon pl-4 pr-3 text-[14px] font-semibold text-cream no-underline transition-colors hover:bg-accent hover:text-cream">
               <span data-fx-icon className="relative flex"><BagIcon /></span>
               <span className="hidden lg:inline">Giỏ hàng</span>
               <span data-cart-badge className="flex h-[22px] min-w-[22px] items-center justify-center rounded-full bg-butter px-1.5 text-[12px] font-bold text-maroon">{count}</span>
@@ -309,6 +320,15 @@ export function SiteHeader({ searchItems = [] }: { searchItems?: SearchItem[] })
       </header>
 
       <SearchPanel open={searchOpen} onClose={() => setSearchOpen(false)} items={searchItems} />
+      <CartDrawer
+        open={cartOpen}
+        onClose={() => {
+          setCartOpen(false);
+          cartAnchor?.focus({ preventScroll: true });
+        }}
+        catalog={cartCatalog}
+        anchor={cartAnchor}
+      />
 
       {/* ------------------------------------------------ Menu dien thoai (mo dang vong tron lan ra) */}
       {menuOpen && (

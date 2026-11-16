@@ -15,6 +15,7 @@ import { CustomerProvider } from "@/modules/customers/customer-context";
 import { StoreInfoProvider } from "@/components/brand/store-info-context";
 import { drinksRepository, productsRepository } from "@/modules/products/repository";
 import type { SearchItem } from "@/components/layout/search-panel";
+import type { CartCatalog } from "@/components/layout/cart-drawer";
 import { getStoreInfo } from "@/modules/settings/store-info-server";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -38,6 +39,10 @@ export default async function RootLayout({
     getStoreInfo(),
     drinksRepository.list().catch(() => []),
   ]);
+  // Du lieu gon cho gio hang nhanh tren thanh menu (gia chi de hien thi – server tinh lai khi tao don)
+  const cartCatalog: CartCatalog = Object.fromEntries(
+    products.map((p) => [p.id, { name: p.name, img: p.cover, priceVnd: p.priceVnd, out: p.status === "out", variants: p.variants?.map((v) => ({ id: v.id, label: v.label, priceVnd: v.priceVnd })) }]),
+  );
   // Du lieu gon cho o tim kiem tren thanh menu (tim ngay trong trinh duyet, khong goi lai server)
   const searchItems: SearchItem[] = [
     ...products.map((p) => ({ kind: "banh" as const, id: p.id, name: p.name, sub: p.tagline ?? p.description, priceVnd: p.variants?.[0]?.priceVnd ?? p.priceVnd, href: `/san-pham/${p.slug}`, img: p.cover })),
@@ -61,9 +66,9 @@ export default async function RootLayout({
       <body className="overflow-x-hidden bg-page font-sans text-base leading-[1.55] text-maroon antialiased">
         <StoreInfoProvider value={store}>
           <SmoothScroll>
-            <CartProvider>
+            <CartProvider catalog={prices}>
               <CustomerProvider>
-                <SiteHeader searchItems={searchItems} />
+                <SiteHeader searchItems={searchItems} cartCatalog={cartCatalog} />
                 {children}
                 <MobileCartBar prices={prices} />
                 <CartToast />

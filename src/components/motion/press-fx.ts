@@ -69,3 +69,12 @@ export function pop(el: Element | null, from = 0.7) {
   if (!el || animationsReduced()) return;
   gsap.fromTo(el, { scale: from }, { scale: 1, duration: 0.6, ease: "elastic.out(1.2, 0.4)", overwrite: "auto" });
 }
+
+/** Nay len roi roi xuong (nut gio hang) */
+export function bounceUp(el: HTMLElement) {
+  if (animationsReduced()) return;
+  gsap
+    .timeline({ overwrite: "auto" })
+    .to(el, { y: -7, scale: 1.05, duration: 0.14, ease: "power2.out" })
+    .to(el, { y: 0, scale: 1, duration: 0.65, ease: "bounce.out" });
+}

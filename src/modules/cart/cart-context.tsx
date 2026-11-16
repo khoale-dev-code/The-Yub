@@ -36,7 +36,8 @@ type CartAction =
   | { type: "setQty"; key: string; qty: number }
   | { type: "remove"; key: string }
   | { type: "setPickup"; pickup: Partial<PickupChoice> }
-  | { type: "clear" };
+  | { type: "clear" }
+  | { type: "prune"; valid: (line: CartLine) => boolean };
 
 const STORAGE_KEY = "yub.cart.v2";
 const MAX_QTY = 20;
@@ -78,6 +79,10 @@ function reducer(state: CartState, action: CartAction): CartState {
       return { ...state, pickup: { ...state.pickup, ...action.pickup } };
     case "clear":
       return { ...state, lines: [] };
+    case "prune": {
+      const lines = state.lines.filter(action.valid);
+      return lines.length === state.lines.length ? state : { ...state, lines };
+    }
   }
 }
 
@@ -122,11 +127,16 @@ function parseStored(raw: string): CartState | null {
   };
 }
 
+/** Mon dang ban (va quy cach hop le) – de bo cac dong gio hang cu khong con ton tai */
+export type CartCatalogIds = Record<string, { variants?: Record<string, number> }>;
+
 /**
  * Gio hang = client state + localStorage (tien ich per-device).
  * Gia KHONG luu o day – server tinh lai gia tu repository khi tao don.
+ * `catalog`: danh sach mon hien co. Dong nao tro toi mon da xoa / an / doi ma (vd du lieu cu
+ * luc chay thu, truoc khi chuyen sang Supabase) se tu bi bo -> so tren icon gio luon khop trang gio hang.
  */
-export function CartProvider({ children }: { children: ReactNode }) {
+export function CartProvider({ children, catalog }: { children: ReactNode; catalog?: CartCatalogIds }) {
   const [state, dispatch] = useReducer(reducer, emptyState);
   const hydrated = useRef(false);
   const [ready, setReady] = useState(false);
@@ -142,6 +152,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
     hydrated.current = true;
     setReady(true);
   }, []);
+
+  useEffect(() => {
+    // Danh muc rong (loi tai du lieu) -> khong xoa gi, tranh mat gio hang cua khach
+    if (!ready || !catalog || Object.keys(catalog).length === 0) return;
+    dispatch({
+      type: "prune",
+      valid: (l) => {
+        const p = catalog[l.productId];
+        if (!p) return false;
+        return !l.variantId || Boolean(p.variants && l.variantId in p.variants);
+      },
+    });
+  }, [ready, catalog, state.lines.length]);
 
   useEffect(() => {
     if (!hydrated.current) return;
