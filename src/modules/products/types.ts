@@ -63,7 +63,7 @@ export const productStatusLabel = (s: ProductStatus, freshBatchTime: string) => 
 
 export const productStatusLabels: Record<ProductStatus, string> = {
   ready: "Có sẵn",
-  oven: "Ra lò 14:30",
+  oven: "Ra lò chiều nay",
   pre: "Đặt trước 1 ngày",
   out: "Hết hôm nay",
 };

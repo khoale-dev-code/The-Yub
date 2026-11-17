@@ -29,9 +29,9 @@ type Size = "M" | "L";
  * Nut chon size: vet xanh truot giua M va L. Moi the nhom co 1 nut, cung dieu khien 1 size chung
  * cho ca thuc don (doi o the nao cung doi het).
  */
-function SizeToggle({ size, onChange, label }: { size: Size; onChange: (s: Size) => void; label: string }) {
+function SizeToggle({ size, onChange, label, compact = false }: { size: Size; onChange: (s: Size) => void; label: string; compact?: boolean }) {
   return (
-    <div role="radiogroup" aria-label={`Chọn size – ${label}`} className="relative grid flex-none grid-cols-2 rounded-full bg-beige p-1">
+    <div role="radiogroup" aria-label={`Chọn size – ${label}`} className={`relative grid flex-none grid-cols-2 rounded-full p-1 ${compact ? "bg-card ring-1 ring-maroon/15" : "bg-beige"}`}>
       <span
         aria-hidden="true"
         className={`absolute bottom-1 left-1 top-1 w-[calc(50%-4px)] rounded-full bg-[#4E7A32] shadow-[0_6px_14px_-6px_rgba(46,82,24,0.7)] transition-transform duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] motion-reduce:transition-none ${size === "L" ? "translate-x-full" : ""}`}
@@ -44,7 +44,7 @@ function SizeToggle({ size, onChange, label }: { size: Size; onChange: (s: Size)
           aria-checked={size === s}
           aria-label={`Size ${s}`}
           onClick={() => onChange(s)}
-          className={`relative z-[1] flex h-9 w-11 items-center justify-center rounded-full border-0 bg-transparent text-[15px] font-bold transition-[color,transform] duration-300 active:scale-90 md:h-10 md:w-12 ${size === s ? "text-white" : "text-muted hover:text-ink"}`}
+          className={`relative z-[1] flex items-center justify-center rounded-full border-0 bg-transparent text-[15px] font-bold transition-[color,transform] duration-300 active:scale-90 ${compact ? "h-8 w-10" : "h-9 w-11 md:h-10 md:w-12"} ${size === s ? "text-white" : "text-muted hover:text-ink"}`}
         >
           {s}
         </button>
@@ -140,8 +140,8 @@ export function DrinkMenu({ groups, sizeLExtra }: { groups: DrinkMenuGroup[]; si
         if (head) gsap.from(head, { y: 36, opacity: 0, duration: 1.1, ease: "expo.out", scrollTrigger: { trigger: card, start: "top 90%", once: true } });
       });
 
-      // Minh hoa binh rot: lo lung nhe + nghieng theo cuon
-      if (pour.current) {
+      // Minh hoa binh rot (chi hien tren may tinh): lo lung nhe + nghieng theo cuon
+      if (pour.current && window.matchMedia("(min-width: 1024px)").matches) {
         gsap.to(pour.current, { y: -10, duration: 2.6, ease: "sine.inOut", yoyo: true, repeat: -1 });
         gsap.fromTo(pour.current, { rotation: 6 }, { rotation: -8, ease: "none", scrollTrigger: { trigger: el, start: "top bottom", end: "bottom top", scrub: 0.6 } });
       }
@@ -162,14 +162,22 @@ export function DrinkMenu({ groups, sizeLExtra }: { groups: DrinkMenuGroup[]; si
     if (row && chip) row.scrollTo({ left: chip.offsetLeft - row.clientWidth / 2 + chip.clientWidth / 2, behavior: "smooth" });
   }, [active]);
 
-  const sizeNote = sizeLExtra ? `Bấm M / L để xem giá theo size (size L thêm ${formatVnd(sizeLExtra)}) · Món nóng chỉ có size M` : "Giá theo size M";
+  const hasL = groups.some((g) => g.items.some((d) => d.priceLVnd !== null));
 
   return (
     <div ref={root} className="relative mx-auto grid max-w-[1200px] gap-8 px-4 pb-16 pt-12 sm:px-6 md:pb-[120px] md:pt-24 lg:grid-cols-[340px_minmax(0,1fr)] lg:gap-16">
       {/* Cột trái – dính khi cuộn (máy tính) */}
       <div className="flex flex-col gap-5 lg:sticky lg:top-[calc(var(--yub-header-h)+40px)] lg:self-start">
         <h2 className="m-0 font-display text-[64px] font-semibold leading-[0.9] tracking-[-0.02em] text-ink md:text-[80px]">Thực đơn</h2>
-        <p className="m-0 max-w-[340px] text-[16px] text-muted">Pha khi bạn gọi, ngay cạnh lò bánh. {sizeNote}.</p>
+        <div className="flex flex-col gap-3">
+          <p className="m-0 max-w-[340px] text-pretty text-[16px] text-muted">Pha khi bạn gọi, ngay cạnh lò bánh.</p>
+          {/* Moi y mot vien – khong bi xuong dong giua chung (vd "M / L") */}
+          <ul className="m-0 flex list-none flex-wrap gap-2 p-0 text-[13px] font-semibold">
+            {hasL && <li className="whitespace-nowrap rounded-full bg-[#4E7A32]/12 px-3 py-1.5 text-[#2F4A1E]">Bấm M/L để xem giá theo size</li>}
+            {sizeLExtra ? <li className="whitespace-nowrap rounded-full bg-beige px-3 py-1.5 text-ink">Size L thêm {formatVnd(sizeLExtra)}</li> : null}
+            <li className="whitespace-nowrap rounded-full bg-rose px-3 py-1.5 text-accent">{hasL ? "Món nóng chỉ có size M" : "Giá theo size M"}</li>
+          </ul>
+        </div>
 
         <nav aria-label="Nhóm đồ uống" className="hidden lg:block">
           <ul ref={navList} className="relative m-0 flex list-none flex-col gap-1 p-0">
@@ -196,20 +204,21 @@ export function DrinkMenu({ groups, sizeLExtra }: { groups: DrinkMenuGroup[]; si
       </div>
 
       {/* Thanh chọn nhóm – điện thoại/máy tính bảng */}
-      <div className="sticky top-[var(--yub-header-h)] z-10 -mx-4 border-y border-maroon/10 bg-cream sm:-mx-6 lg:hidden">
-        <div ref={chips} data-lenis-prevent className="no-scrollbar flex gap-2 overflow-x-auto px-4 py-2.5 sm:px-6">
+      <div data-follow-header className="sticky top-[var(--yub-header-h)] z-10 -mx-4 flex items-center gap-2 border-y border-maroon/10 bg-cream pr-3 sm:-mx-6 sm:pr-5 lg:hidden">
+        <div ref={chips} data-lenis-prevent className="no-scrollbar flex min-w-0 flex-1 gap-2 overflow-x-auto py-2.5 pl-4 pr-2 [mask-image:linear-gradient(to_right,#000_88%,transparent)] sm:pl-6">
           {groups.map((g, i) => (
             <button
               key={g.id}
               type="button"
               onClick={() => goTo(i)}
               aria-current={active === i ? "true" : undefined}
-              className={`inline-flex min-h-10 flex-none items-center gap-1.5 rounded-full border px-4 text-[15px] font-semibold transition-colors ${active === i ? "border-maroon bg-maroon text-cream" : "border-maroon/25 bg-card text-ink"}`}
+              className={`inline-flex min-h-10 flex-none items-center gap-1.5 rounded-full border px-4 text-[15px] font-semibold transition-[background-color,border-color,color,transform] duration-200 active:scale-95 ${active === i ? "border-maroon bg-maroon text-cream" : "border-maroon/25 bg-card text-ink"}`}
             >
               {g.label}
             </button>
           ))}
         </div>
+        {hasL && <SizeToggle size={size} onChange={setSize} label="cả thực đơn" compact />}
       </div>
 
       {/* Cột phải – các thẻ thực đơn */}
@@ -219,7 +228,12 @@ export function DrinkMenu({ groups, sizeLExtra }: { groups: DrinkMenuGroup[]; si
             <div data-drink-head className="flex items-end justify-between gap-4 border-b-[1.5px] border-ink pb-3 md:pb-4">
               <h3 id={`nuoc-${g.id}-h`} className="m-0 font-display text-[32px] font-semibold leading-none tracking-[-0.015em] text-ink md:text-[44px]">{g.label}</h3>
               {g.items.some((d) => d.priceLVnd !== null) ? (
-                <SizeToggle size={size} onChange={setSize} label={g.label} />
+                <>
+                  <span className="hidden lg:block">
+                    <SizeToggle size={size} onChange={setSize} label={g.label} />
+                  </span>
+                  <span className="pb-1 text-[13px] font-bold tabular-nums text-muted-2 lg:hidden">Size {size}</span>
+                </>
               ) : (
                 <span className="pb-1 text-[13px] font-bold text-muted-2">Size M</span>
               )}

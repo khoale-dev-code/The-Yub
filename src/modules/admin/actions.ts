@@ -357,7 +357,8 @@ export async function saveSettingsAction(raw: unknown): Promise<ActionResult> {
     revalidateTag(SETTINGS_TAG);
     revalidatePath("/", "layout");
     // Cac trang tinh co hien dia chi / ban do: lam moi chac chan (khong phu thuoc cach Next gom route group)
-    for (const path of ["/", "/ghe-tiem", "/thuc-don", "/do-uong", "/gio-hang", "/chinh-sach-bao-mat"]) revalidatePath(path);
+    for (const path of ["/", "/ghe-tiem", "/thuc-don", "/do-uong", "/gio-hang", "/chinh-sach-bao-mat", "/dang-nhap", "/yeu-thich"]) revalidatePath(path);
+    revalidatePath("/san-pham/[slug]", "page");
     return { ok: true };
   } catch (err) {
     return fail(err);

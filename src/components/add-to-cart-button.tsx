@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { startTransition, useEffect, useRef, useState } from "react";
 import { useCart } from "@/modules/cart/cart-context";
 import { announceCartAdd } from "@/modules/cart/cart-fx";
 import { CartAddIcon, CheckIcon } from "./ui/icons";
@@ -32,9 +32,11 @@ export function AddToCartButton({ productId, productName, variantId, tone = "out
   }, []);
 
   const onClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    add(productId, 1, variantId);
+    // Hieu ung + dau tick hien ngay; cap nhat gio (ve lai header, thanh gio...) chay o muc uu tien thap
+    // -> ngon tay bam xong thay phan hoi tuc thi, khong bi khung hinh dung tren dien thoai.
     announceCartAdd(e.currentTarget, { name: productName, qty: 1 });
     setAdded(true);
+    startTransition(() => add(productId, 1, variantId));
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => setAdded(false), 1400);
   };

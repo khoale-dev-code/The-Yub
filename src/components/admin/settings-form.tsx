@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { saveSettingsAction } from "@/modules/admin/actions";
 import { directionsUrlOf, isMapEmbedUrl, looksLikeIframe, normalizeMapEmbed } from "@/modules/settings/map";
-import { defaultStoreInfo } from "@/modules/settings/store-info";
+import { defaultStoreInfo, shortTime, toMinutes } from "@/modules/settings/store-info";
 import type { StoreSettings } from "@/modules/settings/types";
 import { Switch } from "./switch";
 import { toast } from "./toast";
-import { btn, card, input, label } from "./ui";
+import { ClockIcon } from "./admin-icons";
+import { btn, card, input, label, saveBar, timeInput } from "./ui";
 
 export function SettingsForm({ initial, readOnly }: { initial: StoreSettings; readOnly: boolean }) {
   // O trong = dang dung mac dinh -> hien san gia tri dang ap dung tren web
@@ -21,6 +22,8 @@ export function SettingsForm({ initial, readOnly }: { initial: StoreSettings; re
   }));
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState<string>(() => JSON.stringify(s));
+  const dirty = useMemo(() => JSON.stringify(s) !== saved, [s, saved]);
   const set = <K extends keyof StoreSettings>(k: K, v: StoreSettings[K]) => setS((x) => ({ ...x, [k]: v }));
   const text = (k: "storeName" | "phone" | "openTime" | "closeTime" | "freshBatchTime" | "address" | "mapUrl" | "mapEmbedUrl" | "bankName" | "bankAccountNo" | "bankAccountName" | "orderingPausedMessage") => ({
     value: s[k] ?? "",
@@ -47,12 +50,37 @@ export function SettingsForm({ initial, readOnly }: { initial: StoreSettings; re
     start(async () => {
       setError(null);
       const res = await saveSettingsAction(s);
-      if (res.ok) toast("Đã lưu cài đặt – web đã cập nhật");
+      if (res.ok) {
+        setSaved(JSON.stringify(s));
+        toast("Đã lưu cài đặt – web đã cập nhật");
+      }
       else {
         setError(res.error);
         toast(res.error, "error");
       }
     });
+
+  const hoursIssue = (() => {
+    const o = s.openTime ?? "";
+    const c = s.closeTime ?? "";
+    const f = s.freshBatchTime ?? "";
+    if (!o || !c || !f) return "Nhập đủ giờ mở cửa, đóng cửa và giờ mẻ bánh.";
+    if (toMinutes(o) >= toMinutes(c)) return "Giờ đóng cửa phải sau giờ mở cửa.";
+    if (toMinutes(f) < toMinutes(o) || toMinutes(f) >= toMinutes(c)) return "Giờ mẻ bánh phải nằm trong giờ mở cửa.";
+    return null;
+  })();
+  const batchPos = hoursIssue ? 0 : (toMinutes(s.freshBatchTime ?? "") - toMinutes(s.openTime ?? "")) / Math.max(1, toMinutes(s.closeTime ?? "") - toMinutes(s.openTime ?? ""));
+
+  const timeTile = (k: "openTime" | "closeTime" | "freshBatchTime", title: string, hint: string, extra = "") => (
+    <label className={`flex min-w-0 cursor-pointer items-center justify-between gap-3 rounded-[18px] border border-maroon/15 bg-white/70 px-4 py-2.5 transition-colors focus-within:border-maroon focus-within:ring-2 focus-within:ring-butter/50 sm:flex-col sm:items-stretch sm:justify-start sm:gap-0.5 sm:px-3.5 sm:py-3 ${extra}`}>
+      <span className="flex min-w-0 flex-col">
+        <span className="text-[15px] font-semibold text-maroon sm:text-[13px] sm:text-muted">{title}</span>
+        <span className="text-[12px] text-muted-2 sm:hidden">{hint}</span>
+      </span>
+      <input {...text(k)} type="time" required className={`${timeInput} w-[7.2em] max-w-[58%] text-right sm:w-full sm:max-w-none sm:text-left`} />
+      <span className="hidden text-[12px] text-muted-2 sm:block">{hint}</span>
+    </label>
+  );
 
   return (
     <form
@@ -84,29 +112,43 @@ export function SettingsForm({ initial, readOnly }: { initial: StoreSettings; re
           <p className="m-0 mt-1 text-[14px] text-muted">Hiện ở đầu trang, chân trang, trang Ghé tiệm, Đặt bánh… Lưu là cả web đổi theo.</p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
-          <label className={label}>
+          <label className={`${label} min-w-0`}>
             Tên tiệm
             <input {...text("storeName")} required minLength={2} maxLength={80} className={input} />
           </label>
-          <label className={label}>
+          <label className={`${label} min-w-0`}>
             Số điện thoại / Zalo
             <input {...text("phone")} type="tel" inputMode="tel" required maxLength={20} placeholder="0975 840 157" className={`${input} tabular-nums`} />
           </label>
         </div>
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-          <label className={label}>
-            Giờ mở cửa
-            <input {...text("openTime")} type="time" required className={`${input} tabular-nums`} />
-          </label>
-          <label className={label}>
-            Giờ đóng cửa
-            <input {...text("closeTime")} type="time" required className={`${input} tabular-nums`} />
-          </label>
-          <label className={`${label} col-span-2 sm:col-span-1`}>
-            Mẻ bánh chiều ra lò
-            <input {...text("freshBatchTime")} type="time" required className={`${input} tabular-nums`} />
-          </label>
+      </section>
+
+      <section className={`${card} flex flex-col gap-4 p-4 md:p-6`}>
+        <div className="flex items-start gap-3">
+          <span aria-hidden="true" className="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-butter/30 text-maroon"><ClockIcon /></span>
+          <div>
+            <h2 className="m-0 font-display text-[20px] font-semibold">Giờ mở cửa & mẻ bánh</h2>
+            <p className="m-0 mt-1 text-[14px] text-muted">Lưu xong, mọi chỗ hiện giờ trên web (đầu trang, chân trang, Ghé tiệm, thẻ bánh…) đổi theo ngay.</p>
+          </div>
         </div>
+        <div className="grid gap-2.5 sm:grid-cols-3 sm:gap-3">
+          {timeTile("openTime", "Mở cửa", "Giờ tiệm mở")}
+          {timeTile("closeTime", "Đóng cửa", "Giờ tiệm đóng")}
+          {timeTile("freshBatchTime", "Mẻ bánh chiều", "Giờ bánh ra lò")}
+        </div>
+        {hoursIssue ? (
+          <p role="alert" className="m-0 rounded-2xl bg-rose px-4 py-3 text-[13px] font-semibold text-accent">{hoursIssue}</p>
+        ) : (
+          <div className="flex flex-col gap-2 rounded-[18px] bg-beige/60 px-4 py-3">
+            <div aria-hidden="true" className="relative h-2 rounded-full bg-maroon/12">
+              <span className="absolute inset-y-0 left-0 right-0 rounded-full bg-[#5B8A3A]/70" />
+              <span className="absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-card bg-butter shadow" style={{ left: `${batchPos * 100}%` }} />
+            </div>
+            <p className="m-0 text-[13px] text-muted">
+              Khách thấy: <strong className="text-maroon">Mở cửa {shortTime(s.openTime ?? "")} – {shortTime(s.closeTime ?? "")}</strong> · <strong className="whitespace-nowrap text-maroon">Ra lò {shortTime(s.freshBatchTime ?? "")}</strong>
+            </p>
+          </div>
+        )}
         <p className="m-0 text-[12px] text-muted">Khung giờ khách chọn khi đặt bánh chỉnh riêng ở mục Khung giờ.</p>
       </section>
 
@@ -167,11 +209,11 @@ export function SettingsForm({ initial, readOnly }: { initial: StoreSettings; re
           <p className="m-0 mt-1 text-[14px] text-muted">Chỉ hiện trong trang quản lý để chép gửi khách khi gọi xác nhận – không hiện công khai trên web.</p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
-          <label className={label}>
+          <label className={`${label} min-w-0`}>
             Ngân hàng
             <input {...text("bankName")} maxLength={80} placeholder="VD: Vietcombank" className={input} />
           </label>
-          <label className={label}>
+          <label className={`${label} min-w-0`}>
             Số tài khoản
             <input {...text("bankAccountNo")} inputMode="numeric" maxLength={30} className={`${input} tabular-nums`} />
           </label>
@@ -184,8 +226,12 @@ export function SettingsForm({ initial, readOnly }: { initial: StoreSettings; re
 
       {error && <p role="alert" className="m-0 rounded-2xl bg-rose px-4 py-3 text-[14px] font-semibold text-accent">{error}</p>}
       {!readOnly && (
-        <div className="sticky bottom-[calc(12px+env(safe-area-inset-bottom))] z-10">
-          <button type="submit" disabled={pending} className={`${btn.primary} min-h-[52px] w-full text-base sm:w-auto sm:px-10`}>{pending ? "Đang lưu…" : "Lưu cài đặt"}</button>
+        <div className={saveBar}>
+          <span className={`flex min-w-0 flex-1 items-center gap-2 text-[13px] font-semibold ${dirty ? "text-[#7A4A05]" : "text-muted"}`}>
+            <span aria-hidden="true" className={`h-2 w-2 flex-none rounded-full ${dirty ? "bg-butter" : "bg-[#5B8A3A]"}`} />
+            <span className="truncate">{pending ? "Đang lưu…" : dirty ? "Có thay đổi chưa lưu" : "Đã lưu"}</span>
+          </span>
+          <button type="submit" disabled={pending || !dirty} className={`${btn.primary} min-h-12 flex-none px-6 text-base sm:px-8`}>{pending ? "Đang lưu…" : "Lưu cài đặt"}</button>
         </div>
       )}
     </form>

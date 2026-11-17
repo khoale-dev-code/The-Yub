@@ -25,7 +25,7 @@ export function MobileCartBar({ prices }: { prices: PriceMap }) {
   }, 0);
 
   return (
-    <div className="fixed inset-x-3 bottom-4 z-30 flex items-center gap-3 rounded-full bg-maroon py-2 pl-5 pr-2 text-cream shadow-[0_12px_32px_rgba(59,15,18,0.35)] md:hidden">
+    <div className="fixed inset-x-3 bottom-[calc(16px+env(safe-area-inset-bottom))] z-30 flex items-center gap-3 rounded-full bg-maroon py-2 pl-5 pr-2 text-cream shadow-[0_12px_32px_rgba(59,15,18,0.35)] md:hidden">
       <div className="flex min-w-0 flex-1 flex-col leading-[1.3]">
         <span className="text-xs text-cream/80">Giỏ hàng · {count} món</span>
         <strong className="text-[15px]">{formatVnd(total)}</strong>

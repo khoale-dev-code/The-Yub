@@ -1,7 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { useCallback, useEffect, useRef, useState, type DragEvent } from "react";
+import gsap from "gsap";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type DragEvent, type PointerEvent as ReactPointerEvent } from "react";
 import {
   IMAGE_MAX_EDGE,
   IMAGE_SOURCE_MAX_BYTES,
@@ -13,7 +14,7 @@ import {
 } from "@/lib/media-rules";
 import { discardUploadsAction, prepareMediaUploadAction } from "@/modules/admin/actions";
 import type { MediaKind, ProductMedia } from "@/modules/products/types";
-import { ChevronLeftIcon, ChevronRightIcon, PlusIcon, XIcon } from "./admin-icons";
+import { ChevronLeftIcon, ChevronRightIcon, GripIcon, PlusIcon, XIcon } from "./admin-icons";
 import { toast } from "./toast";
 
 export interface MediaItem {
@@ -135,6 +136,9 @@ export function MediaManager({ items, onChange }: { items: MediaItem[]; onChange
   const [dragOver, setDragOver] = useState(false);
   const [dragKey, setDragKey] = useState<string | null>(null);
   const blobs = useRef(new Set<string>());
+  const listRef = useRef<HTMLUListElement | null>(null);
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
 
   useEffect(() => {
     const urls = blobs.current;
@@ -199,6 +203,156 @@ export function MediaManager({ items, onChange }: { items: MediaItem[]; onChange
       return next;
     });
 
+  // ------------------------------------------------------------ keo tha sap xep (chuot + ngon tay)
+  // Chuot: nhan giu roi keo (> 6px). Ngon tay: giu ~0,25 giay roi keo (vuot nhanh van cuon trang),
+  // hoac keo ngay o nut ⋮⋮. Cac anh khac truot vao cho moi (FLIP), anh dang keo di theo ngon tay.
+  const sort = useRef<{
+    key: string;
+    id: number;
+    sx: number;
+    sy: number;
+    grabX: number;
+    grabY: number;
+    px: number;
+    py: number;
+    on: boolean;
+    timer: number;
+    raf: number;
+    before: Map<string, { x: number; y: number }> | null;
+  } | null>(null);
+
+  const tileOf = (key: string) => listRef.current?.querySelector<HTMLElement>(`[data-media-key="${CSS.escape(key)}"]`) ?? null;
+  const offsets = () => {
+    const map = new Map<string, { x: number; y: number }>();
+    listRef.current?.querySelectorAll<HTMLElement>("[data-media-key]").forEach((el) => map.set(el.dataset.mediaKey ?? "", { x: el.offsetLeft, y: el.offsetTop }));
+    return map;
+  };
+  const follow = () => {
+    const d = sort.current;
+    const el = d && tileOf(d.key);
+    if (!d || !el) return;
+    gsap.set(el, { x: d.px - d.grabX - el.offsetLeft, y: d.py - d.grabY - el.offsetTop });
+  };
+
+  // Sau khi doi cho: anh khac truot tu vi tri cu sang vi tri moi; anh dang keo bam lai ngon tay
+  useLayoutEffect(() => {
+    const d = sort.current;
+    if (!d?.on || !d.before) return;
+    const before = d.before;
+    d.before = null;
+    listRef.current?.querySelectorAll<HTMLElement>("[data-media-key]").forEach((el) => {
+      const k = el.dataset.mediaKey ?? "";
+      if (k === d.key) return;
+      const old = before.get(k);
+      if (!old) return;
+      const dx = old.x - el.offsetLeft;
+      const dy = old.y - el.offsetTop;
+      if (dx || dy) gsap.fromTo(el, { x: dx, y: dy }, { x: 0, y: 0, duration: 0.32, ease: "power3.out", overwrite: true });
+    });
+    follow();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- chi chay lai khi danh sach doi thu tu
+  }, [items]);
+
+  const startSort = () => {
+    const d = sort.current;
+    const el = d && tileOf(d.key);
+    if (!d || !el) return;
+    d.on = true;
+    setDragKey(d.key);
+    gsap.to(el, { scale: 1.05, boxShadow: "0 18px 36px -14px rgba(36,18,13,0.45)", duration: 0.2, ease: "power2.out" });
+    if (navigator.vibrate) navigator.vibrate(8);
+    follow();
+  };
+
+  const onTileDown = (e: ReactPointerEvent<HTMLElement>, item: MediaItem, handle: boolean) => {
+    if (item.status !== "done" || e.button !== 0 || sort.current || itemsRef.current.length < 2) return;
+    if ((e.target as Element).closest("button") && !handle) return;
+    const list = listRef.current;
+    const el = tileOf(item.key);
+    if (!list || !el) return;
+    const lr = list.getBoundingClientRect();
+    const px = e.clientX - lr.left;
+    const py = e.clientY - lr.top;
+    sort.current = { key: item.key, id: e.pointerId, sx: e.clientX, sy: e.clientY, grabX: px - el.offsetLeft, grabY: py - el.offsetTop, px, py, on: false, timer: 0, raf: 0, before: null };
+    if (handle || e.pointerType === "mouse") {
+      if (handle) startSort();
+    } else {
+      sort.current.timer = window.setTimeout(startSort, 260);
+    }
+  };
+
+  useEffect(() => {
+    const endSort = (cancel = false) => {
+      const d = sort.current;
+      if (!d) return;
+      window.clearTimeout(d.timer);
+      cancelAnimationFrame(d.raf);
+      sort.current = null;
+      if (!d.on) return;
+      const el = tileOf(d.key);
+      if (el) gsap.to(el, { x: 0, y: 0, scale: 1, boxShadow: "0 0 0 0 rgba(0,0,0,0)", duration: cancel ? 0.2 : 0.38, ease: "power3.out", clearProps: "transform,boxShadow" });
+      setDragKey(null);
+    };
+    const onMove = (e: PointerEvent) => {
+      const d = sort.current;
+      const list = listRef.current;
+      if (!d || d.id !== e.pointerId || !list) return;
+      const moved = Math.hypot(e.clientX - d.sx, e.clientY - d.sy);
+      if (!d.on) {
+        if (e.pointerType === "mouse" && moved > 6) startSort();
+        else if (e.pointerType !== "mouse" && moved > 10) {
+          // Vuot truoc khi giu du lau -> nguoi dung dang cuon trang
+          window.clearTimeout(d.timer);
+          sort.current = null;
+        }
+        if (!sort.current?.on) return;
+      }
+      const lr = list.getBoundingClientRect();
+      d.px = e.clientX - lr.left;
+      d.py = e.clientY - lr.top;
+      cancelAnimationFrame(d.raf);
+      d.raf = requestAnimationFrame(() => {
+        follow();
+        // Tim o dang nam duoi ngon tay
+        const tiles = Array.from(list.querySelectorAll<HTMLElement>("[data-media-key]"));
+        const hit = tiles.find((t) => t.dataset.mediaKey !== d.key && d.px >= t.offsetLeft && d.px <= t.offsetLeft + t.offsetWidth && d.py >= t.offsetTop && d.py <= t.offsetTop + t.offsetHeight);
+        if (hit) {
+          const to = itemsRef.current.findIndex((x) => x.key === hit.dataset.mediaKey);
+          if (to >= 0) {
+            d.before = offsets();
+            move(d.key, to);
+          }
+        }
+        // Gan mep man hinh -> tu cuon
+        const edge = 70;
+        if (e.clientY < edge) window.scrollBy(0, -12);
+        else if (e.clientY > window.innerHeight - edge) window.scrollBy(0, 12);
+      });
+    };
+    // Dang keo bang ngon tay: chan trang cuon theo
+    const onTouchMove = (e: TouchEvent) => {
+      if (sort.current?.on && e.cancelable) e.preventDefault();
+    };
+    const onUp = (e: PointerEvent) => {
+      if (sort.current?.id === e.pointerId) endSort();
+    };
+    const onCancel = (e: PointerEvent) => {
+      if (sort.current?.id === e.pointerId) endSort(true);
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onCancel);
+    document.addEventListener("touchmove", onTouchMove, { passive: false });
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onCancel);
+      document.removeEventListener("touchmove", onTouchMove);
+      endSort(true);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- move/startSort chi dung ref + setState on dinh
+  }, []);
+
   const onDropFiles = (e: DragEvent) => {
     e.preventDefault();
     setDragOver(false);
@@ -242,22 +396,17 @@ export function MediaManager({ items, onChange }: { items: MediaItem[]; onChange
       </div>
 
       {items.length > 0 ? (
-        <ul aria-label="Ảnh và video của món" className="m-0 grid list-none grid-cols-2 gap-3 p-0 sm:grid-cols-3 xl:grid-cols-4">
+        <ul ref={listRef} aria-label="Ảnh và video của món" className="relative m-0 grid list-none grid-cols-2 gap-3 p-0 sm:grid-cols-3 xl:grid-cols-4">
           {items.map((item, i) => {
             const isCover = item.key === firstImageKey;
             return (
               <li
                 key={item.key}
-                draggable={item.status === "done"}
-                onDragStart={() => setDragKey(item.key)}
-                onDragEnd={() => setDragKey(null)}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  if (dragKey) move(dragKey, i);
-                  setDragKey(null);
-                }}
-                className={`group relative flex flex-col overflow-hidden rounded-[16px] border bg-card ${item.status === "error" ? "border-accent" : isCover ? "border-maroon" : "border-maroon/12"} ${dragKey === item.key ? "opacity-40" : ""}`}
+                data-media-key={item.key}
+                onPointerDown={(e) => onTileDown(e, item, false)}
+                onContextMenu={(e) => sort.current && e.preventDefault()}
+                onDragStart={(e) => e.preventDefault()}
+                className={`group relative flex flex-col overflow-hidden rounded-[16px] border bg-card ${item.status === "error" ? "border-accent" : isCover ? "border-maroon" : "border-maroon/12"} ${dragKey === item.key ? "z-10 cursor-grabbing" : item.status === "done" ? "cursor-grab" : ""} select-none [-webkit-touch-callout:none]`}
               >
                 <div className="relative aspect-square bg-beige">
                   <Thumb item={item} />
@@ -265,6 +414,11 @@ export function MediaManager({ items, onChange }: { items: MediaItem[]; onChange
                     <span className="absolute left-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-[11px] font-bold text-white">Video</span>
                   )}
                   {isCover && <span className="absolute left-2 top-2 rounded-full bg-maroon px-2 py-0.5 text-[11px] font-bold text-cream">Ảnh bìa</span>}
+                  {item.kind === "image" && !isCover && item.status === "done" && (
+                    <button type="button" onClick={() => move(item.key, 0)} className="absolute bottom-2 left-2 inline-flex min-h-8 items-center rounded-full border-0 bg-white/90 px-2.5 text-[12px] font-bold text-maroon shadow hover:bg-white">
+                      Làm ảnh bìa
+                    </button>
+                  )}
                   {item.status === "uploading" && (
                     <div className="absolute inset-x-0 bottom-0 flex flex-col gap-1 bg-black/55 px-2.5 py-2 text-[12px] font-semibold text-white" role="status">
                       Đang tải… {item.progress}%
@@ -286,16 +440,24 @@ export function MediaManager({ items, onChange }: { items: MediaItem[]; onChange
                   </button>
                 </div>
                 <div className="flex items-center gap-1 p-1.5">
+                  {item.status === "done" && items.length > 1 && (
+                    <span
+                      role="presentation"
+                      title="Kéo để đổi chỗ"
+                      onPointerDown={(e) => {
+                        e.stopPropagation();
+                        onTileDown(e, item, true);
+                      }}
+                      className="flex h-9 w-7 flex-none cursor-grab items-center justify-center rounded-full text-muted-2 hover:bg-maroon/6 hover:text-maroon"
+                      style={{ touchAction: "none" }}
+                    >
+                      <GripIcon size={16} />
+                    </span>
+                  )}
                   <button type="button" onClick={() => move(item.key, i - 1)} disabled={i === 0} aria-label={`Đưa mục ${i + 1} lên trước`} className="flex h-9 w-9 items-center justify-center rounded-full border-0 bg-transparent text-maroon hover:bg-maroon/6 disabled:opacity-30">
                     <ChevronLeftIcon size={16} />
                   </button>
-                  {item.kind === "image" && !isCover && item.status === "done" ? (
-                    <button type="button" onClick={() => move(item.key, 0)} className="min-h-9 flex-1 rounded-full border-0 bg-transparent px-1 text-[12px] font-semibold text-maroon hover:bg-maroon/6">
-                      Đặt làm ảnh bìa
-                    </button>
-                  ) : (
-                    <span className="flex-1 text-center text-[12px] text-muted">{i + 1}</span>
-                  )}
+                  <span className="flex-1 text-center text-[12px] font-semibold tabular-nums text-muted">{i + 1}</span>
                   <button type="button" onClick={() => move(item.key, i + 1)} disabled={i === items.length - 1} aria-label={`Đưa mục ${i + 1} ra sau`} className="flex h-9 w-9 items-center justify-center rounded-full border-0 bg-transparent text-maroon hover:bg-maroon/6 disabled:opacity-30">
                     <ChevronRightIcon size={16} />
                   </button>
@@ -309,7 +471,7 @@ export function MediaManager({ items, onChange }: { items: MediaItem[]; onChange
       )}
       <p className="m-0 text-[13px] text-muted">
         {items.length}/{MEDIA_MAX_ITEMS}
-        {uploading ? ` · đang tải ${uploading} file…` : ""} · Ảnh đầu tiên là ảnh bìa trên thẻ bánh. Kéo thả hoặc dùng mũi tên để sắp xếp.
+        {uploading ? ` · đang tải ${uploading} file…` : ""} · Ảnh đầu tiên là ảnh bìa trên thẻ bánh. Giữ ảnh rồi kéo để đổi chỗ, hoặc dùng mũi tên.
       </p>
     </div>
   );

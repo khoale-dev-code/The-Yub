@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useStoreInfo } from "@/components/brand/store-info-context";
 import { animationsReduced } from "./motion-config";
+import { freezeScroll } from "./scroll-lock";
 import { useLenis } from "./smooth-scroll";
 
 /** Thoi gian cho trang moi toi da truoc khi tu mo man (tranh ket man che khi mang cham) */
@@ -25,6 +26,7 @@ export function PageTransition() {
   const state = useRef({ busy: false, coverDone: false, target: "", hash: "", arrived: false, timer: 0 });
   const lenisRef = useRef(lenis);
   lenisRef.current = lenis;
+  const releaseRef = useRef<(() => void) | null>(null);
 
   const reveal = useRef(() => {});
   reveal.current = () => {
@@ -34,6 +36,8 @@ export function PageTransition() {
     window.clearTimeout(s.timer);
     s.coverDone = false;
     // Trang moi da ve xong duoi man che: bat lai Lenis va dat vi tri cuon (dau trang hoac #muc)
+    releaseRef.current?.();
+    releaseRef.current = null;
     const l = lenisRef.current;
     if (l) {
       l.start();
@@ -109,7 +113,8 @@ export function PageTransition() {
       s.hash = url.hash;
       router.prefetch(href);
       setLabel(a.dataset.transitionLabel || a.textContent?.trim() || store.name);
-      lenisRef.current?.stop();
+      releaseRef.current?.();
+      releaseRef.current = freezeScroll(lenisRef.current);
       // Doi React ve xong chu moi roi moi chay hieu ung
       requestAnimationFrame(() => {
         const chars = el.querySelectorAll("[data-pt-char]");

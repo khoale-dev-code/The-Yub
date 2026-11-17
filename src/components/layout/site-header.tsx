@@ -12,6 +12,7 @@ import { SHOW_HEADER_EVENT } from "@/modules/cart/cart-fx";
 import { animationsReduced } from "../motion/motion-config";
 import { bounceUp, heartBurst, pop, ripple, squash, wiggle } from "../motion/press-fx";
 import { CartDrawer, type CartCatalog } from "./cart-drawer";
+import { freezeScroll } from "../motion/scroll-lock";
 import { useLenis } from "../motion/smooth-scroll";
 import { SearchPanel, type SearchItem } from "./search-panel";
 import { AnnouncementBar } from "./announcement-bar";
@@ -135,6 +136,8 @@ export function SiteHeader({ searchItems = [], cartCatalog = {} }: { searchItems
     const setHidden = (hide: boolean) => {
       if (hiddenRef.current === hide) return;
       hiddenRef.current = hide;
+      // Cac thanh dinh khac (vd: chon nhom do uong) truot len theo header
+      document.documentElement.toggleAttribute("data-header-hidden", hide);
       gsap.to(bars, { yPercent: hide ? -130 : 0, duration: hide ? 0.45 : 0.6, ease: hide ? "power3.in" : "expo.out", overwrite: true });
     };
     let holdUntil = 0;
@@ -155,6 +158,7 @@ export function SiteHeader({ searchItems = [], cartCatalog = {} }: { searchItems
       window.removeEventListener(SHOW_HEADER_EVENT, onShow);
       gsap.set(bars, { yPercent: 0 });
       hiddenRef.current = false;
+      document.documentElement.removeAttribute("data-header-hidden");
     };
   }, [lenis]);
 
@@ -183,12 +187,10 @@ export function SiteHeader({ searchItems = [], cartCatalog = {} }: { searchItems
     if (!menuOpen) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setMenuOpen(false);
     document.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
-    lenis?.stop();
+    const release = freezeScroll(lenis);
     return () => {
       document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-      lenis?.start();
+      release();
     };
   }, [menuOpen, lenis]);
 

@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export const viewport: Viewport = { themeColor: "#24120d" };
+export const viewport: Viewport = { themeColor: "#24120d", viewportFit: "cover" };
 
 // Trang quan ly luon doc du lieu moi, khong cache
 export const dynamic = "force-dynamic";

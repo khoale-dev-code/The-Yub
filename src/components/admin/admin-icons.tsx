@@ -115,3 +115,9 @@ export const PencilIcon = ({ size = 20, ...p }: P) => (
 export const UsersIcon = ({ size = 20, ...p }: P) => (
   <svg {...base(size)} {...p}><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20c.9-3.6 3.4-5.5 6.5-5.5s5.6 1.9 6.5 5.5" /><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18.5 14.8c1.6.8 2.6 2.5 3 5.2" /></svg>
 );
+export const GripIcon = ({ size = 18, ...p }: P) => (
+  <svg {...base(size)} {...p}><circle cx="9" cy="6" r="1.3" /><circle cx="15" cy="6" r="1.3" /><circle cx="9" cy="12" r="1.3" /><circle cx="15" cy="12" r="1.3" /><circle cx="9" cy="18" r="1.3" /><circle cx="15" cy="18" r="1.3" /></svg>
+);
+export const MoveIcon = ({ size = 18, ...p }: P) => (
+  <svg {...base(size)} {...p}><path d="M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3" /></svg>
+);

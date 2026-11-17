@@ -139,7 +139,7 @@ function Shell({ user, counts, children }: { user: ShellUser; counts: { pending:
       <a href="#admin-main" className="sr-only focus:not-sr-only focus:fixed focus:left-1/2 focus:top-20 focus:z-[100] focus:-translate-x-1/2 focus:rounded-full focus:bg-maroon focus:px-4 focus:py-2 focus:text-cream">Bỏ qua menu</a>
 
       {/* ------------------------------------------------ Thanh tren (moi thiet bi) */}
-      <header className="sticky top-0 z-40 px-2 pt-2 sm:px-4 sm:pt-3">
+      <header className="sticky top-0 z-40 bg-[linear-gradient(to_bottom,#F7F0E3_45%,rgba(247,240,227,0))] px-2 pb-1.5 pt-2 sm:px-4 sm:pt-3">
         <div className="mx-auto flex max-w-[1320px] items-center gap-1.5 rounded-[22px] bg-dark py-1.5 pl-1.5 pr-1.5 text-cream shadow-[0_14px_30px_-16px_rgba(36,18,13,0.6)] sm:gap-3 sm:pr-2">
           <button
             ref={menuBtnRef}

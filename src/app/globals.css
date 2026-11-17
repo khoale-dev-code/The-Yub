@@ -173,3 +173,37 @@ html.yub-reduced-motion *::after {
     opacity: 1;
   }
 }
+
+/* === Patch 31: cuon muot tren dien thoai, xuong dong dep, thanh dinh theo header === */
+@layer base {
+  /* Lenis tu lo cuon muot: neu de "smooth" thi moi lan Lenis dat vi tri (nhat la tren dien thoai)
+     trinh duyet lai tu truot them mot lan nua -> giat. */
+  html.lenis {
+    scroll-behavior: auto;
+  }
+  /* Xuong dong dep hon cho tieng Viet: tieu de chia deu dong, doan van tranh 1 chu le loi o dong cuoi */
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+  p,
+  li,
+  figcaption,
+  blockquote {
+    text-wrap: pretty;
+  }
+}
+
+/* Thanh dinh di theo header: header an khi cuon xuong -> thanh dinh len sat mep tren.
+   Doi "top" (khong dung transform) de chi tac dong khi thanh dang dinh, vi tri binh thuong khong bi xe dich. */
+[data-follow-header] {
+  transition: top 0.45s cubic-bezier(0.32, 0, 0.67, 0);
+}
+html[data-header-hidden] [data-follow-header] {
+  top: env(safe-area-inset-top, 0px);
+}
+html:not([data-header-hidden]) [data-follow-header] {
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  transition-duration: 0.6s;
+}

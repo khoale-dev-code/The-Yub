@@ -58,18 +58,39 @@ export default async function DoUongPage() {
 
         {/* Vì sao ghé quầy */}
         <section className="mx-auto max-w-[1200px] px-5 pb-[52px] pt-14 md:px-6 md:py-[120px]">
-          {/* mobile */}
-          <div className="flex flex-col gap-[18px] md:hidden">
+          {/* mobile: 2 ảnh cùng kích thước (3:4) + 3 điểm dạng thẻ */}
+          <div className="flex flex-col gap-5 md:hidden">
             <h2 className="m-0 text-balance font-display text-[32px] font-semibold leading-[1.12]">Pha khi bạn tới, để bạn muốn quay lại</h2>
-            <p className="m-0 text-muted">Quầy nước ngay cạnh lò nướng – cà phê còn thơm, trà còn tươi khi đặt xuống bàn cùng chiếc bánh vừa ra lò.</p>
-            <div className="grid grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] items-end gap-2.5">
-              <div className="relative aspect-[735/839] overflow-hidden rounded-[20px]"><Image src={productImages.pancake} alt="Pancake việt quất và ly americano" fill sizes="55vw" className="object-cover" /></div>
-              <div className="relative aspect-[731/1300] overflow-hidden rounded-[20px]"><Image src={productImages.croissantCoffee} alt="Khay croissant nhiều vị bên ly cà phê" fill sizes="45vw" className="object-cover" /></div>
+            <p className="m-0 text-pretty text-muted">Quầy nước ngay cạnh lò nướng – cà phê còn thơm, trà còn tươi khi đặt xuống bàn cùng chiếc bánh vừa ra lò.</p>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { src: "/images/story/roll-latte.jpg", alt: "Latte đá bên bánh cuộn kem và dâu tươi", cap: "Latte đá & bánh cuộn", amt: "-0.08" },
+                { src: "/images/story/peach-toast.jpg", alt: "Ly cà phê sữa đá bên lát bánh mì trái cây", cap: "Cà phê sữa đá & bánh mì", amt: "0.08" },
+              ].map((f) => (
+                <figure key={f.src} className="m-0 flex flex-col gap-2">
+                  <div className="relative aspect-[3/4] overflow-hidden rounded-[20px] bg-beige">
+                    <div data-parallax={f.amt} className="absolute inset-x-0 -inset-y-[6%]">
+                      <Image src={f.src} alt={f.alt} fill sizes="50vw" className="object-cover" />
+                    </div>
+                  </div>
+                  <figcaption className="text-[13px] leading-snug text-muted-2">{f.cap}</figcaption>
+                </figure>
+              ))}
             </div>
-            <ol className="m-0 mt-1 flex list-none flex-col p-0">
-              {point("01", "Pha khi bạn gọi", "Không pha sẵn, không để lâu.")}
-              {point("02", "Tuỳ chỉnh theo bạn", "Ít ngọt, ít đá, đổi sữa – ghi chú khi đặt.")}
-              {point("03", "Ngồi lại cùng bánh ấm", `Bánh ra lò ${store.freshBatchTime}, mở cửa đến ${shortTime(store.closeTime)}.`, true)}
+            <ol data-reveal-stagger className="m-0 mt-1 grid list-none gap-2.5 p-0">
+              {[
+                ["01", "Pha khi bạn gọi", "Không pha sẵn, không để lâu."],
+                ["02", "Tuỳ chỉnh theo bạn", "Ít ngọt, ít đá, đổi sữa – ghi chú khi đặt."],
+                ["03", "Ngồi lại cùng bánh ấm", `Bánh ra lò ${store.freshBatchTime}, mở cửa đến ${shortTime(store.closeTime)}.`],
+              ].map(([n, t, d]) => (
+                <li key={n} className="flex items-start gap-3.5 rounded-[20px] bg-card px-4 py-3.5 shadow-[0_14px_30px_-26px_rgba(59,15,18,0.5)]">
+                  <span className="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-butter font-display text-[17px] font-semibold text-maroon">{n}</span>
+                  <span className="flex min-w-0 flex-col pt-0.5">
+                    <strong className="text-[16px]">{t}</strong>
+                    <span className="text-pretty text-sm text-muted">{d}</span>
+                  </span>
+                </li>
+              ))}
             </ol>
           </div>
           {/* desktop: 3 cột */}

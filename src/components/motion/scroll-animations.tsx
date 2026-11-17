@@ -30,59 +30,140 @@ export function ScrollAnimations() {
   useEffect(() => {
     const mm = gsap.matchMedia();
 
-    mm.add(motionOkQuery, () => {
-      const inView = (el: Element) => el.getBoundingClientRect().top < window.innerHeight * 0.92;
+    mm.add(motionOkQuery, (ctx) => {
+      const inView = (el: Element) =>
+        el.getBoundingClientRect().top < window.innerHeight * 0.92;
       const splits: SplitText[] = [];
 
       // 1) Section tu dong
       gsap.utils
         .toArray<HTMLElement>("main section")
-        .filter((s) => !s.hasAttribute("data-no-reveal") && !s.parentElement?.closest("section") && !inView(s))
+        .filter(
+          (s) =>
+            !s.hasAttribute("data-no-reveal") &&
+            !s.parentElement?.closest("section") &&
+            !inView(s),
+        )
         .forEach((section) => {
-          const target = section.children.length === 1 ? (section.children[0] as HTMLElement) : section;
-          gsap.from(target, { y: 60, opacity: 0, duration: 1.2, ease: EASE, scrollTrigger: { trigger: section, start: "top 88%", once: true } });
+          const target =
+            section.children.length === 1
+              ? (section.children[0] as HTMLElement)
+              : section;
+          gsap.from(target, {
+            y: 60,
+            opacity: 0,
+            duration: 1.2,
+            ease: EASE,
+            scrollTrigger: { trigger: section, start: "top 88%", once: true },
+          });
         });
 
       // 2) Tieu de tach dong
-      gsap.utils.toArray<HTMLElement>("main h2, [data-split]").forEach((el) => {
-        if (el.closest("[data-no-split]") || inView(el) || el.offsetParent === null) return;
-        const split = SplitText.create(el, {
-          type: "lines",
-          mask: "lines",
-          linesClass: "yub-line",
-          autoSplit: true,
-          onSplit: (self) =>
-            gsap.from(self.lines, {
-              yPercent: 110,
-              duration: 1.15,
-              ease: EASE,
-              stagger: 0.09,
-              scrollTrigger: { trigger: el, start: "top 90%", once: true },
-            }),
+      // Khong dung autoSplit: moi lan trinh duyet tai them 1 bo chu (vd chu dam co dau khi hien thong bao
+      // "Đã thêm…") autoSplit tach lai TAT CA tieu de cung luc -> khung hinh bi dung tren dien thoai.
+      // Thay vao do: doi font tai xong moi tach, chay xong hieu ung thi tra lai chu goc (tu xuong dong khi doi kich thuoc).
+      let alive = true;
+      const splitHeadings = () => {
+        if (!alive) return;
+        ctx.add(() => {
+          gsap.utils
+            .toArray<HTMLElement>("main h2, [data-split]")
+            .forEach((el) => {
+              if (
+                el.closest("[data-no-split]") ||
+                inView(el) ||
+                el.offsetParent === null
+              )
+                return;
+              const split = SplitText.create(el, {
+                type: "lines",
+                mask: "lines",
+                linesClass: "yub-line",
+              });
+              splits.push(split);
+              gsap.from(split.lines, {
+                yPercent: 110,
+                duration: 1.15,
+                ease: EASE,
+                stagger: 0.09,
+                scrollTrigger: { trigger: el, start: "top 90%", once: true },
+                onComplete: () => split.revert(),
+              });
+            });
         });
-        splits.push(split);
-      });
+      };
+      if (document.fonts?.status === "loaded") splitHeadings();
+      else void document.fonts.ready.then(() => splitHeadings());
 
       // 3) Phan tu le
       gsap.utils.toArray<HTMLElement>("[data-reveal]").forEach((el) => {
         if (inView(el)) return;
-        gsap.from(el, { y: 48, opacity: 0, duration: 1.1, ease: EASE, scrollTrigger: { trigger: el, start: "top 90%", once: true } });
+        gsap.from(el, {
+          y: 48,
+          opacity: 0,
+          duration: 1.1,
+          ease: EASE,
+          scrollTrigger: { trigger: el, start: "top 90%", once: true },
+        });
       });
 
       // 4) Lan luot
-      gsap.utils.toArray<HTMLElement>("[data-reveal-stagger]").forEach((group) => {
-        const items = Array.from(group.children);
-        if (items.length === 0 || inView(group)) return;
-        gsap.from(items, { y: 44, opacity: 0, duration: 1, ease: EASE, stagger: 0.1, scrollTrigger: { trigger: group, start: "top 88%", once: true } });
-      });
+      gsap.utils
+        .toArray<HTMLElement>("[data-reveal-stagger]")
+        .forEach((group) => {
+          const items = Array.from(group.children);
+          if (items.length === 0 || inView(group)) return;
+          gsap.from(items, {
+            y: 44,
+            opacity: 0,
+            duration: 1,
+            ease: EASE,
+            stagger: 0.1,
+            scrollTrigger: { trigger: group, start: "top 88%", once: true },
+          });
+        });
 
       // 5) Anh mo man
+      // Dien thoai: clip-path bat ve lai ca anh moi khung hinh -> dung truot + mo dan (chay tren GPU)
+      const lite = window.matchMedia(
+        "(max-width: 767.98px), (pointer: coarse)",
+      ).matches;
       gsap.utils.toArray<HTMLElement>("[data-reveal-image]").forEach((wrap) => {
         if (inView(wrap)) return;
         const img = wrap.querySelector("img");
-        const tl = gsap.timeline({ scrollTrigger: { trigger: wrap, start: "top 92%", once: true } });
-        tl.fromTo(wrap, { clipPath: "inset(100% 0% 0% 0%)" }, { clipPath: "inset(0% 0% 0% 0%)", duration: 1.3, ease: "expo.inOut", clearProps: "clipPath" });
-        if (img) tl.fromTo(img, { scale: 1.15 }, { scale: 1, duration: 1.6, ease: EASE, clearProps: "transform" }, 0);
+        const tl = gsap.timeline({
+          scrollTrigger: { trigger: wrap, start: "top 92%", once: true },
+        });
+        if (lite)
+          tl.fromTo(
+            wrap,
+            { y: 48, opacity: 0 },
+            {
+              y: 0,
+              opacity: 1,
+              duration: 1,
+              ease: EASE,
+              clearProps: "transform,opacity",
+            },
+          );
+        else
+          tl.fromTo(
+            wrap,
+            { clipPath: "inset(100% 0% 0% 0%)" },
+            {
+              clipPath: "inset(0% 0% 0% 0%)",
+              duration: 1.3,
+              ease: "expo.inOut",
+              clearProps: "clipPath",
+            },
+          );
+        if (img)
+          tl.fromTo(
+            img,
+            { scale: 1.15 },
+            { scale: 1, duration: 1.6, ease: EASE, clearProps: "transform" },
+            0,
+          );
       });
 
       // 6) Parallax (dich chuyen ca khung)
@@ -91,7 +172,16 @@ export function ScrollAnimations() {
         gsap.fromTo(
           el,
           { yPercent: -amount * 50 },
-          { yPercent: amount * 50, ease: "none", scrollTrigger: { trigger: el.parentElement ?? el, start: "top bottom", end: "bottom top", scrub: true } },
+          {
+            yPercent: amount * 50,
+            ease: "none",
+            scrollTrigger: {
+              trigger: el.parentElement ?? el,
+              start: "top bottom",
+              end: "bottom top",
+              scrub: true,
+            },
+          },
         );
       });
 
@@ -101,26 +191,39 @@ export function ScrollAnimations() {
         gsap.fromTo(
           el,
           { xPercent: to > 0 ? -to : 0 },
-          { xPercent: to > 0 ? 0 : to, ease: "none", scrollTrigger: { trigger: el.parentElement ?? el, start: "top bottom", end: "bottom top", scrub: 0.4 } },
+          {
+            xPercent: to > 0 ? 0 : to,
+            ease: "none",
+            scrollTrigger: {
+              trigger: el.parentElement ?? el,
+              start: "top bottom",
+              end: "bottom top",
+              scrub: 0.4,
+            },
+          },
         );
       });
 
       // 8) Duong ke ve theo cuon
       gsap.utils.toArray<HTMLElement>("[data-scrub-line]").forEach((el) => {
         const horizontal = el.dataset.scrubLine === "x";
-        gsap.fromTo(
-          el,
-          horizontal ? { scaleX: 0 } : { scaleY: 0 },
-          {
-            ...(horizontal ? { scaleX: 1 } : { scaleY: 1 }),
-            ease: "none",
-            transformOrigin: horizontal ? "0% 50%" : "50% 0%",
-            scrollTrigger: { trigger: el.parentElement ?? el, start: "top 70%", end: "bottom 60%", scrub: 0.6 },
+        gsap.fromTo(el, horizontal ? { scaleX: 0 } : { scaleY: 0 }, {
+          ...(horizontal ? { scaleX: 1 } : { scaleY: 1 }),
+          ease: "none",
+          transformOrigin: horizontal ? "0% 50%" : "50% 0%",
+          scrollTrigger: {
+            trigger: el.parentElement ?? el,
+            start: "top 70%",
+            end: "bottom 60%",
+            scrub: 0.6,
           },
-        );
+        });
       });
 
-      return () => splits.forEach((s) => s.revert());
+      return () => {
+        alive = false;
+        splits.forEach((s) => s.revert());
+      };
     });
 
     // Noi dung doi chieu cao (anh tai xong, "Xem them banh"...) -> tinh lai vi tri trigger

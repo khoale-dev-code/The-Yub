@@ -9,6 +9,8 @@ import { saveProductAction } from "@/modules/admin/actions";
 import type { Category } from "@/modules/categories/types";
 import { productStatusLabel, type Product, type ProductCategory, type ProductStatus } from "@/modules/products/types";
 import { PlusIcon, TrashIcon } from "./admin-icons";
+import { CategoryPicker } from "./category-picker";
+import { CoverFramer } from "./cover-framer";
 import { DeleteButton } from "./delete-button";
 import { MediaManager, toItems, type MediaItem } from "./media-manager";
 import { Switch } from "./switch";
@@ -16,13 +18,6 @@ import { toast } from "./toast";
 import { btn, card, input, label, productStatusTone } from "./ui";
 import { useStoreInfo } from "@/components/brand/store-info-context";
 
-const POSITIONS = [
-  { v: "center 30%", l: "Trên" },
-  { v: "center 45%", l: "Giữa trên" },
-  { v: "center", l: "Giữa" },
-  { v: "center 60%", l: "Giữa dưới" },
-  { v: "center 75%", l: "Dưới" },
-] as const;
 
 export const toSlug = (s: string) =>
   s
@@ -133,24 +128,15 @@ export function ProductForm({ product, categories, canDelete = false }: { produc
             Tên món
             <input value={name} onChange={(e) => setName(e.target.value)} required maxLength={80} className={input} placeholder="VD: Croissant bơ" />
           </label>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className={label}>
-              <span className="flex items-center justify-between gap-2">Danh mục <Link href="/admin/danh-muc" className="text-[12px] font-semibold text-muted underline-offset-2 hover:underline">Sửa danh mục</Link></span>
-              <select value={category} onChange={(e) => setCategory(e.target.value as ProductCategory)} className={input}>
-                {categories.map((c) => (
-                  <option key={c.slug} value={c.slug}>{c.name}</option>
-                ))}
-              </select>
-            </label>
-            <label className={label}>
-              Đường dẫn trên web
-              <span className="flex items-center gap-0 overflow-hidden rounded-[14px] border border-maroon/20 bg-white/70 focus-within:border-maroon">
-                <span className="flex-none whitespace-nowrap pl-3.5 text-[14px] text-muted-2">/san-pham/</span>
-                <input value={finalSlug} onChange={(e) => { setSlugTouched(true); setSlug(e.target.value.toLowerCase()); }} className="min-h-11 w-full border-0 bg-transparent pr-3 text-[15px] focus:outline-none" aria-describedby="slug-hint" />
-              </span>
-              <span id="slug-hint" className="text-[12px] font-normal text-muted">Tự tạo từ tên – chữ thường không dấu.</span>
-            </label>
-          </div>
+          <CategoryPicker categories={categories} value={category} onChange={(v) => setCategory(v as ProductCategory)} />
+          <label className={label}>
+            Đường dẫn trên web
+            <span className="flex min-w-0 items-center gap-0 overflow-hidden rounded-[14px] border border-maroon/20 bg-white/70 focus-within:border-maroon">
+              <span className="flex-none whitespace-nowrap pl-3.5 text-[14px] text-muted-2">/san-pham/</span>
+              <input value={finalSlug} onChange={(e) => { setSlugTouched(true); setSlug(e.target.value.toLowerCase()); }} className="min-h-11 w-full min-w-0 border-0 bg-transparent pr-3 text-[15px] focus:outline-none" aria-describedby="slug-hint" />
+            </span>
+            <span id="slug-hint" className="text-[12px] font-normal text-muted">Tự tạo từ tên – chữ thường không dấu.</span>
+          </label>
           <label className={label}>
             Mô tả ngắn <span className="text-[12px] font-normal text-muted">(hiện trên thẻ bánh, không bắt buộc)</span>
             <input value={tagline} onChange={(e) => setTagline(e.target.value)} maxLength={120} className={input} placeholder="VD: Sô-cô-la đen chảy bên trong." />
@@ -164,7 +150,7 @@ export function ProductForm({ product, categories, canDelete = false }: { produc
         <section className={`${card} flex flex-col gap-4 p-4 md:p-6`}>
           <h2 className="m-0 font-display text-[20px] font-semibold">Giá & quy cách</h2>
           <div className="grid gap-4 sm:grid-cols-2">
-            <label className={label}>
+            <label className={`${label} min-w-0`}>
               Giá bán (VND)
               <input inputMode="numeric" value={showPrice(variants.length ? shownPrice : price)} disabled={variants.length > 0} onChange={(e) => setPrice(parsePrice(e.target.value))} className={`${input} tabular-nums disabled:opacity-60`} placeholder="35.000" />
               {variants.length > 0 && <span className="text-[12px] font-normal text-muted">Lấy theo quy cách đầu tiên.</span>}
@@ -192,16 +178,7 @@ export function ProductForm({ product, categories, canDelete = false }: { produc
         <section className={`${card} flex flex-col gap-4 p-4 md:p-6`}>
           <h2 className="m-0 font-display text-[20px] font-semibold">Ảnh & video</h2>
           <MediaManager items={media} onChange={setMedia} />
-          {coverItem && (
-            <div className="flex flex-col gap-2 border-t border-maroon/8 pt-3">
-              <span className="text-[14px] font-semibold">Phần ảnh bìa hiển thị trên thẻ bánh</span>
-              <div className="flex flex-wrap gap-1.5">
-                {POSITIONS.map((p) => (
-                  <button key={p.v} type="button" aria-pressed={position === p.v} onClick={() => setPosition(p.v)} className={`min-h-9 rounded-full border px-3 text-[13px] font-semibold ${position === p.v ? "border-maroon bg-maroon text-cream" : "border-maroon/20 bg-card text-maroon"}`}>{p.l}</button>
-                ))}
-              </div>
-            </div>
-          )}
+          {coverItem && coverItem.kind === "image" && <CoverFramer src={coverItem.src} value={position} onChange={setPosition} />}
         </section>
       </div>
 
@@ -223,7 +200,7 @@ export function ProductForm({ product, categories, canDelete = false }: { produc
         </section>
 
         <section className={`${card} overflow-hidden`} aria-label="Xem trước thẻ bánh">
-          <div className="relative aspect-[4/3] bg-beige">
+          <div className="relative aspect-[1/0.92] bg-beige">
             {coverItem?.src.startsWith("blob:") ? (
               // eslint-disable-next-line @next/next/no-img-element -- anh dang tai len (xem truoc tam)
               <img src={coverItem.src} alt="" className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: position }} />
@@ -240,7 +217,7 @@ export function ProductForm({ product, categories, canDelete = false }: { produc
         </section>
 
         {error && <p role="alert" className="m-0 rounded-2xl bg-rose px-4 py-3 text-[14px] font-semibold text-accent">{error}</p>}
-        <div className="sticky bottom-[calc(12px+env(safe-area-inset-bottom))] z-10 flex gap-2 rounded-full bg-[#F7F0E3]/90 p-1 backdrop-blur lg:static lg:bg-transparent lg:p-0">
+        <div className="sticky bottom-[calc(12px+env(safe-area-inset-bottom))] z-10 flex gap-2 rounded-full bg-[#F7F0E3] p-1 shadow-[0_-10px_24px_-18px_rgba(36,18,13,0.4)] lg:static lg:shadow-none lg:bg-transparent lg:p-0">
           <button type="submit" disabled={pending} className={`${btn.primary} min-h-[52px] flex-1 text-base`}>{pending ? "Đang lưu…" : product ? "Lưu thay đổi" : "Thêm món"}</button>
           <Link href="/admin/mon" className={`${btn.secondary} min-h-[52px]`}>Huỷ</Link>
         </div>

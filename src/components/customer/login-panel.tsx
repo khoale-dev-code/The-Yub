@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { useEffect, useLayoutEffect, useRef, useState, useTransition } from "react";
 import { startLoginAction } from "@/modules/customers/actions";
 import { animationsReduced } from "../motion/motion-config";
+import { freezeScroll } from "../motion/scroll-lock";
 import { useLenis } from "../motion/smooth-scroll";
 import { BagIcon, CheckIcon, CloseIcon, HeartIcon } from "../ui/icons";
 
@@ -120,6 +121,8 @@ function ConsentDialog({ open, onClose, storeName, mode, next }: { open: boolean
   const rootRef = useRef<HTMLDivElement | null>(null);
   const sheetRef = useRef<HTMLDivElement | null>(null);
   const lenis = useLenis();
+  const releaseRef = useRef<(() => void) | null>(null);
+  useEffect(() => () => releaseRef.current?.(), []);
   const ready = c.policy && c.processing && c.age;
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
@@ -136,7 +139,8 @@ function ConsentDialog({ open, onClose, storeName, mode, next }: { open: boolean
     if (!mounted || !root || !sheet) return;
     const mobile = window.matchMedia("(max-width: 639px)").matches;
     if (open) {
-      lenis?.stop();
+      releaseRef.current?.();
+      releaseRef.current = freezeScroll(lenis);
       gsap.set([root, sheet], { visibility: "visible" });
       if (!animationsReduced()) {
         gsap.fromTo(root, { opacity: 0 }, { opacity: 1, duration: 0.25 });
@@ -151,7 +155,8 @@ function ConsentDialog({ open, onClose, storeName, mode, next }: { open: boolean
         window.removeEventListener("keydown", onKey);
       };
     }
-    lenis?.start();
+    releaseRef.current?.();
+    releaseRef.current = null;
     const done = () => {
       setMounted(false);
       setError(null);

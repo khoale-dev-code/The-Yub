@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { startTransition, useState } from "react";
 import { formatVnd } from "@/lib/format";
 import { unitPriceOf } from "@/modules/products/pricing";
 import type { Product } from "@/modules/products/types";
@@ -25,9 +25,9 @@ export function ProductPurchase({ product }: { product: Product }) {
   const unit = unitPriceOf(product, variantId) ?? product.priceVnd;
 
   const onAdd = (e: React.MouseEvent<HTMLButtonElement>) => {
-    add(product.id, qty, variantId);
     announceCartAdd(e.currentTarget, { name: product.name, qty, note: variants.find((v) => v.id === variantId)?.label });
     setAdded(true);
+    startTransition(() => add(product.id, qty, variantId));
   };
 
   return (

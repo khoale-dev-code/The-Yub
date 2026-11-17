@@ -20,6 +20,12 @@ export const btn = {
 export const input =
   "min-h-11 w-full rounded-[14px] border border-maroon/20 bg-white/70 px-3.5 text-[15px] text-maroon placeholder:text-muted-2/70 focus:border-maroon focus:outline-none focus:ring-2 focus:ring-butter/50";
 export const label = "flex flex-col gap-1.5 text-[14px] font-semibold text-maroon";
+/** O chon gio (type=time): iPhone tu dat be rong rieng cho o gio -> tran khung; ep ve block + min-w-0 */
+export const timeInput =
+  "block min-w-0 appearance-none border-0 bg-transparent p-0 font-display text-[24px] font-semibold leading-[1.2] tabular-nums text-maroon focus:outline-none disabled:opacity-60 [&::-webkit-calendar-picker-indicator]:opacity-40 [&::-webkit-date-and-time-value]:min-h-[1.2em] [&::-webkit-date-and-time-value]:[text-align:inherit]";
+/** Thanh luu dinh day man hinh (dien thoai: tran ra 2 mep; may tinh: the bo goc) */
+export const saveBar =
+  "sticky bottom-0 z-20 -mx-4 flex items-center gap-3 border-t border-maroon/10 bg-[#F7F0E3] px-4 pb-[calc(12px+env(safe-area-inset-bottom))] pt-3 shadow-[0_-12px_24px_-18px_rgba(36,18,13,0.35)] sm:bottom-3 sm:mx-0 sm:rounded-[22px] sm:border sm:bg-card sm:pb-3 sm:shadow-[0_18px_40px_-24px_rgba(36,18,13,0.45)]";
 
 export function PageHeader({ title, description, actions, back }: { title: string; description?: ReactNode; actions?: ReactNode; back?: ReactNode }) {
   return (

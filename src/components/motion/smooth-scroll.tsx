@@ -10,6 +10,8 @@ import { createContext, useContext, useEffect, useRef, useState, type ReactNode 
 import { animationsReduced, motionConfig, osPrefersReducedMotion, smoothScrollDisabled } from "./motion-config";
 
 gsap.registerPlugin(ScrollTrigger);
+// Dien thoai: thanh dia chi an/hien lam doi chieu cao man hinh lien tuc -> khong tinh lai ScrollTrigger moi lan (giat)
+ScrollTrigger.config({ ignoreMobileResize: true });
 
 const LenisContext = createContext<Lenis | null>(null);
 

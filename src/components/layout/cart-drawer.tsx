@@ -8,6 +8,7 @@ import { createPortal } from "react-dom";
 import { formatVnd } from "@/lib/format";
 import { lineKey, useCart } from "@/modules/cart/cart-context";
 import { animationsReduced } from "../motion/motion-config";
+import { freezeScroll } from "../motion/scroll-lock";
 import { useLenis } from "../motion/smooth-scroll";
 import { ArrowRightIcon, BagIcon, CloseIcon, MinusIcon, PlusIcon, TrashIcon } from "../ui/icons";
 
@@ -25,6 +26,8 @@ export type CartCatalog = Record<
 export function CartDrawer({ open, onClose, catalog, anchor }: { open: boolean; onClose: () => void; catalog: CartCatalog; anchor: HTMLElement | null }) {
   const cart = useCart();
   const lenis = useLenis();
+  const releaseRef = useRef<(() => void) | null>(null);
+  useEffect(() => () => releaseRef.current?.(), []);
   const [mounted, setMounted] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
@@ -54,13 +57,34 @@ export function CartDrawer({ open, onClose, catalog, anchor }: { open: boolean; 
     } else setPos(null);
   }, [open, anchor]);
 
+  // Dien thoai: mot so trinh duyet (Chrome/Safari iOS) de thanh cong cu de len day man hinh ma khung
+  // nhin khong co lai -> nang khung gio len dung bang phan bi che, nut "Đặt bánh" khong bao gio bi cat.
+  useEffect(() => {
+    const panel = panelRef.current;
+    const vv = window.visualViewport;
+    if (!mounted || pos || !panel || !vv) return;
+    const fit = () => {
+      if (vv.scale > 1.01) return;
+      const hidden = Math.round(window.innerHeight - vv.height - vv.offsetTop);
+      panel.style.bottom = hidden > 0 && hidden < 220 ? `${hidden}px` : "";
+    };
+    fit();
+    vv.addEventListener("resize", fit);
+    vv.addEventListener("scroll", fit);
+    return () => {
+      vv.removeEventListener("resize", fit);
+      vv.removeEventListener("scroll", fit);
+    };
+  }, [mounted, pos]);
+
   useLayoutEffect(() => {
     const root = rootRef.current;
     const panel = panelRef.current;
     if (!mounted || !root || !panel) return;
     const mobile = !window.matchMedia("(min-width: 768px)").matches;
     if (open) {
-      lenis?.stop();
+      releaseRef.current?.();
+      releaseRef.current = freezeScroll(lenis);
       gsap.set([root, panel], { visibility: "visible" });
       if (animationsReduced()) gsap.set([root, panel], { opacity: 1 });
       else {
@@ -75,7 +99,8 @@ export function CartDrawer({ open, onClose, catalog, anchor }: { open: boolean; 
       window.addEventListener("keydown", onKey);
       return () => window.removeEventListener("keydown", onKey);
     }
-    lenis?.start();
+    releaseRef.current?.();
+    releaseRef.current = null;
     const done = () => setMounted(false);
     if (animationsReduced()) return done();
     if (mobile) gsap.to(panel, { yPercent: 100, duration: 0.3, ease: "power2.in" });
@@ -93,7 +118,7 @@ export function CartDrawer({ open, onClose, catalog, anchor }: { open: boolean; 
       <div
         ref={panelRef}
         style={pos ? { top: pos.top, right: pos.right } : undefined}
-        className="invisible absolute inset-x-0 bottom-0 flex max-h-[85dvh] flex-col rounded-t-[28px] bg-page opacity-0 shadow-[0_-24px_60px_-24px_rgba(36,18,13,0.6)] md:inset-x-auto md:bottom-auto md:max-h-[min(620px,calc(100dvh-120px))] md:w-[400px] md:rounded-[26px] md:shadow-[0_30px_70px_-24px_rgba(36,18,13,0.55)]"
+        className="invisible absolute inset-x-0 bottom-0 flex max-h-[min(85dvh,640px)] flex-col overscroll-contain rounded-t-[28px] bg-page opacity-0 shadow-[0_-24px_60px_-24px_rgba(36,18,13,0.6)] md:inset-x-auto md:bottom-auto md:max-h-[min(620px,calc(100dvh-120px))] md:w-[400px] md:rounded-[26px] md:shadow-[0_30px_70px_-24px_rgba(36,18,13,0.55)]"
       >
         <span aria-hidden="true" className="mx-auto mt-2.5 h-1.5 w-10 rounded-full bg-maroon/15 md:hidden" />
         <div className="flex items-center justify-between gap-3 px-5 pb-3 pt-3 md:pt-4">

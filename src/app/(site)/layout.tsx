@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "../fonts";
 import "../globals.css";
 import { SiteHeader } from "@/components/layout/site-header";
@@ -17,6 +17,9 @@ import { drinksRepository, productsRepository } from "@/modules/products/reposit
 import type { SearchItem } from "@/components/layout/search-panel";
 import type { CartCatalog } from "@/components/layout/cart-drawer";
 import { getStoreInfo } from "@/modules/settings/store-info-server";
+
+/** viewport-fit=cover: de env(safe-area-inset-bottom) co gia tri that tren iPhone (thanh gio hang, khung gio nhanh) */
+export const viewport: Viewport = { viewportFit: "cover" };
 
 export async function generateMetadata(): Promise<Metadata> {
   const store = await getStoreInfo();
@@ -64,7 +67,7 @@ export default async function RootLayout({
   return (
     <html lang="vi">
       <body className="overflow-x-hidden bg-page font-sans text-base leading-[1.55] text-maroon antialiased">
-        <StoreInfoProvider value={store}>
+        <StoreInfoProvider value={store} live>
           <SmoothScroll>
             <CartProvider catalog={prices}>
               <CustomerProvider>

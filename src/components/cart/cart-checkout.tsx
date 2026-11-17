@@ -22,7 +22,7 @@ type Step = CheckoutStep;
 
 const statusNote: Record<Product["status"], string> = {
   ready: "Có sẵn hôm nay",
-  oven: "Ra lò 14:30",
+  oven: "Ra lò chiều nay",
   pre: "Đặt trước 1 ngày",
   out: "Hết hôm nay – vui lòng xoá khỏi giỏ",
 };

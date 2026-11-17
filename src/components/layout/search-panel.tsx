@@ -8,6 +8,7 @@ import { createPortal } from "react-dom";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { formatVnd } from "@/lib/format";
 import { animationsReduced } from "../motion/motion-config";
+import { freezeScroll } from "../motion/scroll-lock";
 import { useLenis } from "../motion/smooth-scroll";
 import { ArrowRightIcon, CloseIcon, SearchIcon } from "../ui/icons";
 
@@ -42,6 +43,8 @@ const MAX = 8;
 export function SearchPanel({ open, onClose, items }: { open: boolean; onClose: () => void; items: SearchItem[] }) {
   const router = useRouter();
   const lenis = useLenis();
+  const releaseRef = useRef<(() => void) | null>(null);
+  useEffect(() => () => releaseRef.current?.(), []);
   const [q, setQ] = useState("");
   const [active, setActive] = useState(0);
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -73,7 +76,8 @@ export function SearchPanel({ open, onClose, items }: { open: boolean; onClose: 
     const panel = panelRef.current;
     if (!mounted || !root || !panel) return;
     if (open) {
-      lenis?.stop();
+      releaseRef.current?.();
+      releaseRef.current = freezeScroll(lenis);
       // Hien ngay (visibility) de o nhap nhan focus duoc tuc thi; hieu ung chi doi opacity/transform
       gsap.set([root, panel], { visibility: "visible" });
       if (animationsReduced()) {
@@ -88,7 +92,8 @@ export function SearchPanel({ open, onClose, items }: { open: boolean; onClose: 
       window.addEventListener("keydown", onKey);
       return () => window.removeEventListener("keydown", onKey);
     }
-    lenis?.start();
+    releaseRef.current?.();
+    releaseRef.current = null;
     const done = () => {
       setMounted(false);
       setQ("");

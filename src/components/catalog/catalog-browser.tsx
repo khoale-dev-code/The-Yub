@@ -27,7 +27,7 @@ type SortKey = "popular" | "asc" | "desc" | "fresh";
 const statusFilters: { id: StatusFilter; label: string; dot: string }[] = [
   { id: "all", label: "Tất cả", dot: "#3B0F12" },
   { id: "ready", label: "Có sẵn hôm nay", dot: "#5B8A3A" },
-  { id: "oven", label: "Ra lò 14:30", dot: "#E8A93B" },
+  { id: "oven", label: "Ra lò chiều nay", dot: "#E8A93B" },
   { id: "pre", label: "Đặt trước", dot: "#7A2A2E" },
 ];
 
