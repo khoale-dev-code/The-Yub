@@ -1,4 +1,5 @@
 import { unstable_cache } from "next/cache";
+import { demoRecipes } from "@/modules/recipes/demo-store";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
 import { drinks as seedDrinks } from "@/modules/products/data";
 import type { Drink, DrinkGroup } from "@/modules/products/types";
@@ -90,10 +91,12 @@ export const drinksRepository = {
     if (!db) {
       const store = localStore();
       const idx = store.findIndex((d) => d.id === id);
+      if (demoRecipes().has(`do-uong/${id}`)) throw new Error("Hãy xóa công thức của đồ uống trước khi xóa món.");
       if (idx >= 0) store.splice(idx, 1);
       return;
     }
     const { error } = await db.from("drinks").delete().eq("id", id);
+    if (error?.code === "23503" || error?.code === "23001") throw new Error("Đồ uống đang được sử dụng. Kiểm tra và xóa công thức trước khi xóa món.");
     if (error) throw new Error(`Không xoá được đồ uống (${error.code}).`);
   },
 

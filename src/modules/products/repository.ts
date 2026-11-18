@@ -1,4 +1,5 @@
 import { unstable_cache } from "next/cache";
+import { demoRecipes } from "@/modules/recipes/demo-store";
 import { productImages, type ProductImageKey } from "@/lib/images";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
 import { products as seedProducts, type SeedProduct } from "./data";
@@ -60,6 +61,7 @@ const localSource: ProductsSource = {
     const idx = store.findIndex((p) => p.id === id);
     if (idx < 0) throw new Error("Không tìm thấy món.");
     store.splice(idx, 1);
+    demoRecipes().delete(`banh/${id}`);
   },
   async update(id, patch) {
     const p = localStore().find((x) => x.id === id);

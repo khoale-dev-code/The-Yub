@@ -12,6 +12,8 @@ export async function middleware(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
   const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
   const response = NextResponse.next({ request });
+  // Callback tự đổi mã PKCE và kiểm tra admin_users trước khi phát cookie.
+  if (request.nextUrl.pathname === "/admin/dang-nhap/callback") return response;
   // Cung dieu kien voi isSupabaseConfigured(): thieu 1 bien thi Admin chua chay Supabase -> khong chuyen huong
   // (neu khong, middleware va trang dang nhap se day qua lai vo tan).
   if (!url || !anon || !process.env.SUPABASE_SERVICE_ROLE_KEY) return response;

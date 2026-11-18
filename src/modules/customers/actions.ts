@@ -4,8 +4,8 @@ import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { getSupabaseAdmin, supabaseAnonKey, supabaseUrl } from "@/lib/supabase/server";
-import { timedFetch } from "@/lib/supabase/timed-fetch";
+import { getSupabaseAdmin } from "@/lib/supabase/server";
+import { googleEnabled } from "@/lib/supabase/google-provider";
 import { productsRepository } from "@/modules/products/repository";
 import { CONSENT_COOKIE, CONSENT_VERSION, encodeConsent, safeNext } from "./consent";
 import { CustomersNotReadyError, customersRepository } from "./repository";
@@ -32,24 +32,6 @@ async function siteOrigin(): Promise<string> {
   const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
   const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") || host.startsWith("127.") ? "http" : "https");
   return `${proto}://${host}`;
-}
-
-/** Supabase da bat nha cung cap Google chua? (hoi /auth/v1/settings – cong khai; luu 1 phut) */
-let googleCheck: { ok: boolean; at: number } | null = null;
-async function googleEnabled(): Promise<boolean> {
-  if (googleCheck && Date.now() - googleCheck.at < 60_000) return googleCheck.ok;
-  const url = supabaseUrl();
-  const anon = supabaseAnonKey();
-  if (!url || !anon) return false;
-  try {
-    const res = await timedFetch(`${url}/auth/v1/settings`, { headers: { apikey: anon }, cache: "no-store" });
-    if (!res.ok) return true; // khong kiem tra duoc -> de Supabase tu bao
-    const body = (await res.json()) as { external?: Record<string, boolean> };
-    googleCheck = { ok: body.external?.google === true, at: Date.now() };
-    return googleCheck.ok;
-  } catch {
-    return true;
-  }
 }
 
 /**

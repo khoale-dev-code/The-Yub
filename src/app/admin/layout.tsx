@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export const viewport: Viewport = { themeColor: "#24120d", viewportFit: "cover" };
+export const viewport: Viewport = { themeColor: "#ffffff", viewportFit: "cover" };
 
 // Trang quan ly luon doc du lieu moi, khong cache
 export const dynamic = "force-dynamic";
@@ -21,8 +21,8 @@ export const dynamic = "force-dynamic";
 export default async function AdminRootLayout({ children }: { children: React.ReactNode }) {
   const store = await getStoreInfo();
   return (
-    <html lang="vi">
-      <body className="bg-[#F7F0E3] font-sans text-base leading-[1.55] text-maroon antialiased">
+    <html lang="vi" className="bg-white [--color-card:#fff] [--color-page:#fff]">
+      <body className="min-h-dvh bg-white font-sans text-base leading-[1.55] text-maroon antialiased">
         <StoreInfoProvider value={store}>{children}</StoreInfoProvider>
       </body>
     </html>
