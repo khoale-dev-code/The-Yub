@@ -1,3 +1,4 @@
+// TheYub-Order-Anytime-V1
 "use client";
 
 import Image from "next/image";
@@ -24,11 +25,11 @@ export function PickupPlanner({ variant = "split" }: { variant?: "split" | "shee
 
   useEffect(() => setDates(getPickupDateOptions(4)), []);
 
-  // Mac dinh chon "Ngay mai" nhu ban thiet ke, neu chua chon/ngay cu
+  // Mac dinh hom nay neu chua chon/ngay cu; tiem xac nhan gio nhan.
   useEffect(() => {
     if (dates.length === 0) return;
     if (!dates.some((d) => d.value === pickup.date)) {
-      const fallback = dates[1] ?? dates[0];
+      const fallback = dates[0];
       if (fallback) setPickup({ date: fallback.value });
     }
   }, [dates, pickup.date, setPickup]);

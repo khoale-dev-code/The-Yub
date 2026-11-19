@@ -1,3 +1,4 @@
+// TheYub-Order-Anytime-V1
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -34,14 +35,14 @@ const PinIcon = () => (
 
 const steps = [
   { n: "01", title: "Chọn bánh online", text: "Xem thực đơn, thêm bánh vào giỏ – chọn quy cách nếu có." },
-  { n: "02", title: "Hẹn ngày & khung giờ", text: "Chọn ngày nhận và khung giờ. Bánh kem, hộp quà cần đặt trước 1 ngày." },
+  { n: "02", title: "Hẹn ngày & khung giờ", text: "Chọn ngày và khung giờ mong muốn, có thể nhận trong ngày. Tiệm sẽ xác nhận giờ nhận." },
   { n: "03", title: "Tiệm gọi xác nhận", text: "Tiệm gọi lại trong giờ mở cửa, xác nhận đơn rồi mới chuẩn bị bánh." },
   { n: "04", title: "Ghé tiệm nhận bánh", text: "Đọc mã đơn ở quầy. Phần bánh của bạn đã được để riêng." },
 ];
 
 const faqsOf = (store: StoreInfo) => [
   { q: "Tôi có cần đặt trước không?", a: `Không bắt buộc với bánh có sẵn trong ngày. Nhưng nếu muốn chắc có phần ở mẻ ${store.freshBatchTime}, bạn nên đặt trước và chọn khung giờ nhận.` },
-  { q: "Bánh kem và hộp quà đặt trước bao lâu?", a: "Ít nhất 1 ngày. Khi đặt, bạn chọn ngày nhận từ ngày mai trở đi; tiệm sẽ gọi để xác nhận chi tiết (ví dụ chữ viết trên bánh)." },
+  { q: "Tôi có thể đặt bánh bất cứ lúc nào không?", a: "Có. Bạn có thể gửi đơn bất cứ lúc nào, kể cả ngoài giờ mở cửa, và chọn nhận trong ngày. Tiệm sẽ gọi trong giờ mở cửa để xác nhận khả năng chuẩn bị, thời gian nhận và yêu cầu riêng cho bánh kem hoặc hộp quà." },
   { q: "Tiệm có giao hàng không?", a: "Hiện tiệm nhận bánh tại tiệm theo giờ hẹn. Nếu cần hỗ trợ khác, bạn gọi tiệm trước nhé." },
   { q: "Thanh toán thế nào?", a: "Trả khi nhận bánh (tiền mặt hoặc thẻ tại quầy), hoặc chuyển khoản theo thông tin tiệm gửi khi gọi xác nhận. Đơn chuyển khoản chỉ được tính đã thanh toán sau khi tiệm đối soát." },
   { q: "Tôi muốn đổi giờ nhận hoặc huỷ đơn?", a: `Gọi tiệm qua số ${store.phone} trong giờ mở cửa, tiệm sẽ đổi giúp bạn.` },

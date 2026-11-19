@@ -1,3 +1,4 @@
+// TheYub-Order-Anytime-V1
 import { addDays, todayVN } from "@/lib/dates";
 import { getOrdersRepository } from "@/modules/orders/repository";
 import type { OrderInput } from "@/modules/orders/schema";
@@ -49,7 +50,7 @@ export async function editOrder(user: AdminUser, code: string, input: OrderInput
   if (!order) throw new Error("Không tìm thấy đơn.");
   if (!EDITABLE.includes(order.status)) throw new Error("Đơn đã kết thúc – không sửa được.");
   validatePickup(input);
-  const items = await priceOrderLines(input.items, input.pickupDate);
+  const items = await priceOrderLines(input.items);
   const total = items.reduce((n, i) => n + i.lineTotalVnd, 0);
   if (order.paymentStatus === "paid" && total !== order.totalVnd) {
     throw new Error("Đơn đã ghi nhận thanh toán – không đổi món làm thay đổi tổng tiền. Bỏ đánh dấu đã nhận tiền trước (chủ tiệm).");

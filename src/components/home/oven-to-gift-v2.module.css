@@ -1,0 +1,48 @@
+/* Compact V2: the description precedes navigation in the DOM, not just visually. */
+.root { --story-top: calc(var(--yub-header-h, 80px) + 16px); }
+.panel { min-width: 0; }
+@media (min-width: 768px) {
+  .root .wave { height: 56px; }
+  .root .layout {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+    column-gap: clamp(24px, 4vw, 56px);
+    padding: 80px 24px;
+  }
+  .root .panel { position: static; top: var(--story-top); align-self: start; }
+  .root[data-sticky="true"] .panel { position: sticky; }
+  .root .heading { font-size: clamp(30px, 4.4vh, 44px); line-height: 1.08; }
+  .root .intro { margin-top: 10px; font-size: 15px; line-height: 1.5; }
+  .root .details { margin-top: 16px; }
+  .root .description {
+    min-height: 96px;
+    margin-top: 0;
+    padding: 16px;
+    gap: 14px;
+    border-radius: 20px;
+  }
+  .root .number { font-size: 44px; }
+  .root .descriptionText { padding-top: 0; font-size: 15px; line-height: 1.5; }
+  .root .steps { list-style: none; margin: 14px 0 0; padding: 0; }
+  .root .stepItem { min-width: 0; }
+  .root .stepButton {
+    display: flex; align-items: center; gap: 8px; width: 100%;
+    min-height: 44px; padding: 10px 12px; border-radius: 12px;
+    border: 1px solid rgb(251 243 227 / 20%);
+    background: transparent; color: rgb(251 243 227 / 80%);
+    text-align: left; font: inherit; font-size: 14px; line-height: 1.35; cursor: pointer;
+  }
+  .root .stepButton[aria-current="step"] {
+    background: rgb(232 169 59 / 12%); border-color: #e8a93b; color: #fbf3e3;
+  }
+  .root .stepButton:hover { border-color: #e8a93b; color: #fbf3e3; }
+  .root .stepButton:focus-visible { outline: 2px solid #e8a93b; outline-offset: 3px; }
+  .root .stepIndex { flex: none; color: #e8a93b; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .root .cta { margin-top: 14px; min-height: 44px; padding: 10px 20px; font-size: 14px; }
+  .root .cards { gap: clamp(40px, 8vh, 80px); padding-top: 0; padding-bottom: 0; }
+  .root .image {
+    width: min(100%, calc(max(240px, 100svh - var(--story-top) - 32px) * var(--story-image-ratio)));
+    align-self: center;
+  }
+  .root[data-sticky="false"] .caption { display: flex; }
+}

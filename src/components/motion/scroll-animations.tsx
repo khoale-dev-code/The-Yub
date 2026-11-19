@@ -58,39 +58,52 @@ export function ScrollAnimations() {
           });
         });
 
-      // 2) Tieu de tach dong
-      // Khong dung autoSplit: moi lan trinh duyet tai them 1 bo chu (vd chu dam co dau khi hien thong bao
-      // "Đã thêm…") autoSplit tach lai TAT CA tieu de cung luc -> khung hinh bi dung tren dien thoai.
-      // Thay vao do: doi font tai xong moi tach, chay xong hieu ung thi tra lai chu goc (tu xuong dong khi doi kich thuoc).
+      // 2) Headings: keep the same line-reveal animation, but defer expensive
+      // SplitText DOM measurements until each heading is near the viewport.
+      // This is homepage-only; other routes retain their existing setup.
       let alive = true;
+      let headingObserver: IntersectionObserver | null = null;
+      const splitOne = (el: HTMLElement) => {
+        if (!alive || !el.isConnected || el.offsetParent === null) return;
+        ctx.add(() => {
+          if (!alive || !el.isConnected) return;
+          const split = SplitText.create(el, {
+            type: "lines",
+            mask: "lines",
+            linesClass: "yub-line",
+          });
+          splits.push(split);
+          gsap.from(split.lines, {
+            yPercent: 110,
+            duration: 1.15,
+            ease: EASE,
+            stagger: 0.09,
+            scrollTrigger: { trigger: el, start: "top 90%", once: true },
+            onComplete: () => split.revert(),
+          });
+        });
+      };
       const splitHeadings = () => {
         if (!alive) return;
-        ctx.add(() => {
-          gsap.utils
-            .toArray<HTMLElement>("main h2, [data-split]")
-            .forEach((el) => {
-              if (
-                el.closest("[data-no-split]") ||
-                inView(el) ||
-                el.offsetParent === null
-              )
-                return;
-              const split = SplitText.create(el, {
-                type: "lines",
-                mask: "lines",
-                linesClass: "yub-line",
-              });
-              splits.push(split);
-              gsap.from(split.lines, {
-                yPercent: 110,
-                duration: 1.15,
-                ease: EASE,
-                stagger: 0.09,
-                scrollTrigger: { trigger: el, start: "top 90%", once: true },
-                onComplete: () => split.revert(),
-              });
-            });
-        });
+        const pending = gsap.utils
+          .toArray<HTMLElement>("main h2, [data-split]")
+          .filter((el) => !el.closest("[data-no-split]") && !inView(el) && el.offsetParent !== null);
+        if (pathname === "/" && typeof IntersectionObserver !== "undefined") {
+          // Prepare ~500px ahead: no initial offscreen DOM split / extra layout.
+          headingObserver = new IntersectionObserver(
+            (entries) => {
+              for (const entry of entries) {
+                if (!entry.isIntersecting) continue;
+                headingObserver?.unobserve(entry.target);
+                splitOne(entry.target as HTMLElement);
+              }
+            },
+            { rootMargin: "500px 0px 500px 0px", threshold: 0 },
+          );
+          pending.forEach((el) => headingObserver?.observe(el));
+        } else {
+          pending.forEach(splitOne);
+        }
       };
       if (document.fonts?.status === "loaded") splitHeadings();
       else void document.fonts.ready.then(() => splitHeadings());
@@ -222,21 +235,39 @@ export function ScrollAnimations() {
 
       return () => {
         alive = false;
+        headingObserver?.disconnect();
         splits.forEach((s) => s.revert());
       };
     });
 
-    // Noi dung doi chieu cao (anh tai xong, "Xem them banh"...) -> tinh lai vi tri trigger
+    // Batch refreshes after *real* document-size changes (images/fonts/products).
+    // ScrollTrigger already handles native resize/scroll; avoid redundant refreshes
+    // for the initial ResizeObserver delivery or sub-pixel layout noise.
     let t: ReturnType<typeof setTimeout> | undefined;
-    const ro = new ResizeObserver(() => {
+    let lastWidth = document.documentElement.clientWidth;
+    let lastHeight = Math.round(document.body.scrollHeight);
+    const scheduleRefresh = () => {
+      const width = document.documentElement.clientWidth;
+      const height = Math.round(document.body.scrollHeight);
+      if (Math.abs(height - lastHeight) < 2 && width === lastWidth) return;
+      lastWidth = width;
+      lastHeight = height;
       clearTimeout(t);
-      t = setTimeout(() => ScrollTrigger.refresh(), 150);
-    });
+      if (!document.hidden) {
+        t = setTimeout(() => ScrollTrigger.refresh(true), 240);
+      }
+    };
+    const ro = new ResizeObserver(scheduleRefresh);
     ro.observe(document.body);
+    const onVisible = () => {
+      if (!document.hidden) scheduleRefresh();
+    };
+    document.addEventListener("visibilitychange", onVisible);
 
     return () => {
       clearTimeout(t);
       ro.disconnect();
+      document.removeEventListener("visibilitychange", onVisible);
       mm.revert();
     };
   }, [pathname]);

@@ -1,3 +1,4 @@
+// TheYub-Order-Anytime-V1
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -156,7 +157,7 @@ export default async function SanPhamPage({ params }: { params: Promise<Params> 
           <dl className="m-0 flex flex-col text-[15px]">
             {[
               ["Trọng lượng", "Chờ tiệm cập nhật"],
-              ["Ra lò", product.status === "pre" ? "Đặt trước 1 ngày" : `${store.freshBatchTime} mỗi chiều`],
+              ["Ra lò", product.status === "pre" ? "Tiệm xác nhận" : `${store.freshBatchTime} mỗi chiều`],
               ["Dùng ngon nhất", use.best],
               ["Bảo quản", use.keep],
               ["Hâm nóng", use.warm],

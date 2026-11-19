@@ -1,0 +1,36 @@
+/* Desktop story: fit the whole text panel; allow normal scrolling when it cannot fit. */
+.root { --story-top: calc(var(--yub-header-h, 80px) + 20px); }
+.panel { min-width: 0; }
+@media (min-width: 768px) {
+  .root .layout {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+    column-gap: clamp(28px, 4vw, 64px);
+    /* Leave room for the decorative waves so they cannot cover the final content. */
+    padding: calc(clamp(80px, 11vw, 170px) + 32px) 24px;
+  }
+  .root .panel { position: static; top: var(--story-top); align-self: start; }
+  .root[data-sticky="true"] .panel { position: sticky; }
+  .root .heading { font-size: clamp(32px, 4.8vh, 52px); line-height: 1.08; }
+  .root .intro { margin-top: 12px; font-size: 15px; line-height: 1.6; }
+  .root .details { margin-top: clamp(16px, 2.8vh, 28px); }
+  .root .stepRow { padding-top: 6px; padding-bottom: 6px; gap: 12px; }
+  .root .stepTitle { font-size: clamp(20px, 2.7vh, 27px); line-height: 1.25; }
+  .root .description {
+    min-height: 104px;
+    margin-top: clamp(16px, 2.5vh, 24px);
+    padding: 16px;
+    gap: 16px;
+    border-radius: 20px;
+  }
+  .root .number { font-size: clamp(40px, 6vh, 56px); }
+  .root .descriptionText { padding-top: 0; font-size: 15px; line-height: 1.6; }
+  .root .cta { margin-top: 18px; min-height: 48px; padding: 10px 22px; font-size: 14px; }
+  .root .cards { gap: clamp(48px, 10vh, 112px); padding-top: 0; padding-bottom: 0; }
+  .root .image {
+    /* Width follows each source image ratio, so the entire image fits vertically too. */
+    width: min(100%, calc(max(240px, 100svh - var(--story-top) - 32px) * var(--story-image-ratio)));
+    align-self: center;
+  }
+  .root[data-sticky="false"] .caption { display: flex; }
+}

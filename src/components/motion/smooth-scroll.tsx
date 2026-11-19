@@ -52,17 +52,38 @@ export function SmoothScroll({ children }: { children: ReactNode }) {
       respectReducedMotion: motionConfig.smoothScrollRespectsReducedMotion,
     });
 
+    // Avoid repeating progress-bar DOM writes for imperceptible fractional changes.
+    let lastProgress = -1;
     const setBar = (progress: number) => {
-      if (bar.current) bar.current.style.transform = `scaleX(${Number.isFinite(progress) ? progress : 0})`;
+      const value = Number.isFinite(progress) ? Math.max(0, Math.min(1, progress)) : 0;
+      if (Math.abs(value - lastProgress) < 0.001 && value !== 0 && value !== 1) return;
+      lastProgress = value;
+      if (bar.current) bar.current.style.transform = `scaleX(${value})`;
     };
-    instance.on("scroll", (l: Lenis) => {
+    const onScroll = (l: Lenis) => {
       ScrollTrigger.update();
       setBar(l.progress);
-    });
+    };
+    instance.on("scroll", onScroll);
+    setBar(instance.progress);
 
     const tick = (time: number) => instance.raf(time * 1000);
-    gsap.ticker.add(tick);
+    let ticking = false;
+    const syncVisibility = () => {
+      if (document.hidden) {
+        if (ticking) gsap.ticker.remove(tick);
+        ticking = false;
+      } else {
+        if (!ticking) gsap.ticker.add(tick);
+        ticking = true;
+        instance.resize();
+        ScrollTrigger.update();
+        setBar(instance.progress);
+      }
+    };
     gsap.ticker.lagSmoothing(0);
+    document.addEventListener("visibilitychange", syncVisibility);
+    syncVisibility();
     setLenis(instance);
 
     if (wantDebug) {
@@ -72,7 +93,9 @@ export function SmoothScroll({ children }: { children: ReactNode }) {
     }
 
     return () => {
-      gsap.ticker.remove(tick);
+      document.removeEventListener("visibilitychange", syncVisibility);
+      if (ticking) gsap.ticker.remove(tick);
+      instance.off("scroll", onScroll);
       instance.destroy();
       setLenis(null);
     };

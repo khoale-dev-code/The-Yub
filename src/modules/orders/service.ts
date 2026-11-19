@@ -1,5 +1,6 @@
+// TheYub-Order-Anytime-V1
 import { timingSafeEqual } from "node:crypto";
-import { isToday, isValidPickupDate, pickupSlots } from "@/lib/pickup";
+import { isValidPickupDate, pickupSlots } from "@/lib/pickup";
 import { unitPriceOf, variantLabelOf } from "@/modules/products/pricing";
 import { productsRepository } from "@/modules/products/repository";
 import { settingsRepository } from "@/modules/settings/repository";
@@ -11,16 +12,13 @@ import type { Order } from "./types";
  * Tinh lai gia tung dong tu repository (single source of truth) – dung cho tao don va sua don.
  * Khong bao gio tin so tien tu client.
  */
-export async function priceOrderLines(lines: OrderInput["items"], pickupDate: string): Promise<OrderDraft["items"]> {
+export async function priceOrderLines(lines: OrderInput["items"]): Promise<OrderDraft["items"]> {
   const found = await productsRepository.findManyByIds(lines.map((i) => i.productId));
   const items: OrderDraft["items"] = [];
   for (const line of lines) {
     const product = found.get(line.productId);
     if (!product) {
       throw new Error("Có món không còn trong thực đơn, vui lòng xem lại giỏ hàng.");
-    }
-    if (product.status === "pre" && isToday(pickupDate)) {
-      throw new Error(`"${product.name}" cần đặt trước 1 ngày – vui lòng chọn ngày nhận từ ngày mai.`);
     }
     if (product.status === "out") {
       throw new Error(`"${product.name}" đã hết hôm nay, vui lòng bỏ khỏi giỏ.`);
@@ -73,7 +71,7 @@ export async function createOrder(input: OrderInput, opts: { byAdmin?: boolean; 
     }
   }
   validatePickup(input);
-  const items = await priceOrderLines(input.items, input.pickupDate);
+  const items = await priceOrderLines(input.items);
 
   try {
     return await getOrdersRepository().create({

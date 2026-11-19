@@ -17,7 +17,7 @@ export const motionConfig = {
    */
   animationsRespectReducedMotion: false,
   /** Do "luot" khi cuon chuot/touchpad: nho hon = muot/dai hon. lenis.dev ~0.1 */
-  lerp: 0.085,
+  lerp: 0.11,
   wheelMultiplier: 1,
   /** Dien thoai: false = cuon native (on dinh nhat, nhat la iOS) */
   syncTouch: false,

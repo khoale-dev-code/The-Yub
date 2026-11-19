@@ -1,3 +1,4 @@
+// TheYub-Order-Anytime-V1
 "use client";
 
 import gsap from "gsap";
@@ -259,7 +260,7 @@ export function CatalogBrowser({ products, categories, initialQuery = "", initia
             <div className="flex flex-wrap items-center justify-between gap-3">
               <span className="text-sm text-muted sm:text-[15px]" aria-live="polite">
                 Đang xem <strong className="text-maroon">{shown.length} / {filtered.length} món</strong>
-                <span className="md:hidden"> · Bánh kem &amp; hộp quà đặt trước 1 ngày</span>
+                <span className="md:hidden"> · Đặt bánh bất cứ lúc nào</span>
                 <span className="hidden md:inline"> · Cuộn trong khung để xem thêm</span>
               </span>
               <label className="hidden items-center gap-2.5 text-sm text-muted sm:inline-flex">

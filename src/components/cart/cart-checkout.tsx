@@ -1,3 +1,4 @@
+// TheYub-Order-Anytime-V1
 "use client";
 
 import Image from "next/image";
@@ -23,7 +24,7 @@ type Step = CheckoutStep;
 const statusNote: Record<Product["status"], string> = {
   ready: "Có sẵn hôm nay",
   oven: "Ra lò chiều nay",
-  pre: "Đặt trước 1 ngày",
+  pre: "Tiệm xác nhận",
   out: "Hết hôm nay – vui lòng xoá khỏi giỏ",
 };
 
@@ -64,7 +65,7 @@ export function CartCheckout({ products, initialStep = 1 }: CartCheckoutProps) {
   }, [customer.loggedIn, customer.name, customer.phone, step]);
   useEffect(() => {
     if (dates.length && !dates.some((d) => d.value === cart.pickup.date)) {
-      const fallback = dates[1] ?? dates[0];
+      const fallback = dates[0];
       if (fallback) cart.setPickup({ date: fallback.value });
     }
   }, [dates, cart]);
@@ -88,17 +89,15 @@ export function CartCheckout({ products, initialStep = 1 }: CartCheckoutProps) {
   const subtotal = rows.reduce((n, r) => n + r.total, 0);
   const empty = rows.length === 0;
   const hasSoldOut = rows.some((r) => r.product.status === "out");
-  const hasPreorder = rows.some((r) => r.product.status === "pre");
 
   const selectedDate = dates.find((d) => d.value === cart.pickup.date);
   const pickupLabel = selectedDate ? `${selectedDate.top} ${selectedDate.day} · ${pickupSlotLabel(cart.pickup.slotId)}` : pickupSlotLabel(cart.pickup.slotId);
-  const todayBlocked = hasPreorder && selectedDate?.top === "Hôm nay";
 
   // Vao thang buoc 2 nhung gio trong / con mon can sua -> quay ve buoc 1 de khach sua
   useEffect(() => {
     if (!cart.ready || step !== 2 || receipt) return;
-    if (empty || hasSoldOut || (dates.length > 0 && todayBlocked)) setStep(1);
-  }, [cart.ready, step, receipt, empty, hasSoldOut, todayBlocked, dates.length]);
+    if (empty || hasSoldOut) setStep(1);
+  }, [cart.ready, step, receipt, empty, hasSoldOut]);
 
   const goStep = (s: Step) => {
     setStep(s);
@@ -147,12 +146,12 @@ export function CartCheckout({ products, initialStep = 1 }: CartCheckoutProps) {
   };
 
   const onPrimary = () => {
-    if (empty || hasSoldOut || todayBlocked) return;
+    if (empty || hasSoldOut) return;
     if (step === 1) goStep(2);
     else submitOrder();
   };
 
-  const ctaDisabled = empty || hasSoldOut || todayBlocked || pending;
+  const ctaDisabled = empty || hasSoldOut || pending;
 
   return (
     <div ref={topRef} className="scroll-mt-0">
@@ -247,7 +246,6 @@ export function CartCheckout({ products, initialStep = 1 }: CartCheckoutProps) {
                       );
                     })}
                   </div>
-                  {todayBlocked && <p role="alert" className="m-0 text-sm font-semibold text-accent">Giỏ có món cần đặt trước 1 ngày – vui lòng chọn ngày nhận từ ngày mai.</p>}
                 </section>
               </>
             )}
@@ -322,7 +320,7 @@ export function CartCheckout({ products, initialStep = 1 }: CartCheckoutProps) {
               {!pending && <ArrowRightIcon />}
             </button>
             {hasSoldOut && <p className="m-0 text-[13px] font-semibold text-butter">Có món đã hết hôm nay – xoá khỏi giỏ để tiếp tục.</p>}
-            <p className="m-0 text-[13px] text-cream/75">Tiệm gọi xác nhận đơn trong giờ mở cửa. Bánh kem và hộp quà cần đặt trước 1 ngày. Tổng tiền được tiệm tính lại khi nhận đơn.</p>
+            <p className="m-0 text-[13px] text-cream/75">Bạn có thể đặt bánh bất cứ lúc nào, kể cả nhận trong ngày. Tiệm gọi xác nhận thời gian chuẩn bị và nhận bánh trong giờ mở cửa. Tổng tiền được tiệm tính lại khi nhận đơn.</p>
           </aside>
         </div>
       )}

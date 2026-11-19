@@ -1,3 +1,4 @@
+// TheYub-Order-Anytime-V1
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -168,7 +169,7 @@ export default async function ThucDonPage({ searchParams }: { searchParams: Prom
             </div>
             <div className="relative flex flex-col items-start justify-center gap-4 overflow-hidden bg-rose px-6 py-10 md:px-14 md:py-12">
               <h2 className="relative m-0 max-w-[360px] text-balance font-display text-[34px] font-semibold leading-[1.08] tracking-[-0.01em] md:text-[44px]">{giftBox.name} cho buổi gặp mặt</h2>
-              <p className="relative m-0 max-w-[320px] text-ink">Đặt trước 1 ngày, tiệm gói hộp sẵn để bạn mang đi tặng.</p>
+              <p className="relative m-0 max-w-[320px] text-ink">Đặt hộp quà bất cứ lúc nào; tiệm sẽ xác nhận thời gian chuẩn bị và ghé lấy.</p>
               <Link href={`/san-pham/${giftBox.slug}`} className="relative inline-flex min-h-[52px] items-center gap-2 rounded-full bg-maroon px-6 font-semibold text-cream no-underline hover:bg-accent hover:text-cream">
                 Đặt hộp quà · {formatVnd(giftBox.priceVnd)} <ArrowRightIcon />
               </Link>

@@ -1,3 +1,4 @@
+// TheYub-Order-Anytime-V1
 import type { ProductImageKey } from "@/lib/images";
 
 /** Ma danh muc banh (Admin > Danh muc) – vd "croissant", "combo" */
@@ -64,7 +65,7 @@ export const productStatusLabel = (s: ProductStatus, freshBatchTime: string) => 
 export const productStatusLabels: Record<ProductStatus, string> = {
   ready: "Có sẵn",
   oven: "Ra lò chiều nay",
-  pre: "Đặt trước 1 ngày",
+  pre: "Tiệm xác nhận",
   out: "Hết hôm nay",
 };
 

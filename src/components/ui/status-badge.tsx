@@ -1,3 +1,4 @@
+// TheYub-Order-Anytime-V1
 "use client";
 
 import { useStoreInfo } from "@/components/brand/store-info-context";
@@ -6,7 +7,7 @@ import { productStatusLabel, type ProductStatus } from "@/modules/products/types
 export const statusMeta: Record<ProductStatus, { label: string; className: string }> = {
   ready: { label: "Có sẵn", className: "bg-[#e3ebd3] text-[#2f4a1e]" },
   oven: { label: "Ra lò chiều nay", className: "bg-[#f6d58e] text-maroon" },
-  pre: { label: "Đặt trước 1 ngày", className: "bg-[#f1dccb] text-[#5a1d20]" },
+  pre: { label: "Tiệm xác nhận", className: "bg-[#f1dccb] text-[#5a1d20]" },
   out: { label: "Hết hôm nay", className: "bg-[#e8ddd0] text-[#6b5a50]" },
 };
 

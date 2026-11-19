@@ -1,7 +1,10 @@
+// TheYub-Order-Anytime-V1
+// TheYub-Home-Compact-V1
 import Image from "next/image";
 import Link from "next/link";
 import { AddToCartButton } from "@/components/add-to-cart-button";
 import { DrinkBoard } from "@/components/home/drink-board";
+import { DesktopDrinkShowcase } from "@/components/home/desktop-drink-showcase";
 import { HeroCarousel, type HeroSlide } from "@/components/home/hero-carousel";
 import { Marquee } from "@/components/home/marquee";
 import { MobileHero } from "@/components/home/mobile-hero";
@@ -24,7 +27,6 @@ import { directionsUrlOf } from "@/modules/settings/map";
 import { shortTime } from "@/modules/settings/store-info";
 import { categoriesRepository } from "@/modules/categories/repository";
 
-const linkCaps = "inline-flex min-h-11 items-center gap-2 text-[13px] font-semibold uppercase tracking-[0.08em]";
 
 const priceOf = (list: Product[], slug: string) => {
   const p = list.find((x) => x.slug === slug);
@@ -42,7 +44,7 @@ export default async function HomePage() {
   const slides: HeroSlide[] = [
     { img: "/images/hero/croissant-desktop.jpg", imgMobile: "/images/hero/croissant-mobile.jpg", pos: "center 50%", posMobile: "center 40%", alt: "Chiếc croissant bẻ đôi lơ lửng, lộ ruột bánh nhiều lớp", headline: "Giòn rụm,\nthơm bơ,\nra lò mỗi chiều.", sub: `Croissant, tart và bánh ngọt của The Yub — nướng theo mẻ nhỏ, ra lò lúc ${store.freshBatchTime}.`, cta: "Xem thực đơn", href: "#thuc-don", item: "Croissant bơ", price: priceOf(products, "croissant-bo"), note: `Ra lò ${store.freshBatchTime}` },
     { img: "/images/hero/egg-tart-desktop.jpg", imgMobile: "/images/hero/egg-tart-mobile.jpg", pos: "center 50%", posMobile: "center 35%", alt: "Bánh tart trứng vàng óng bẻ đôi, vỏ ngàn lớp", headline: "Vỏ ngàn lớp,\nnhân trứng sữa.", sub: "Tart trứng nướng mỗi chiều — vỏ giòn tan, nhân béo mịn, ngon nhất khi còn ấm.", cta: "Xem các loại tart", href: "/thuc-don?loai=tart#danh-sach", item: tartTrung?.name ?? "Tart trứng", price: tartTrung ? formatVnd(tartTrung.priceVnd) : "", note: "Có sẵn hôm nay" },
-    { img: "/images/hero/gift-box-desktop.jpg", imgMobile: "/images/hero/gift-box-mobile.jpg", pos: "center 50%", posMobile: "center 50%", alt: "Hộp tart mix vị và bánh kem trái cây đặt trong hộp quà", headline: "Hộp quà nhỏ,\nniềm vui lớn.", sub: "Bánh kem trái cây, hộp tart mix vị — đặt trước cho sinh nhật và những dịp đặc biệt.", cta: "Chọn hộp quà", href: "/thuc-don", item: "Hộp tart 4 vị", price: priceOf(products, "hop-tart-4-vi"), note: "Đặt trước 1 ngày" },
+    { img: "/images/hero/gift-box-desktop.jpg", imgMobile: "/images/hero/gift-box-mobile.jpg", pos: "center 50%", posMobile: "center 50%", alt: "Hộp tart mix vị và bánh kem trái cây đặt trong hộp quà", headline: "Hộp quà nhỏ,\nniềm vui lớn.", sub: "Bánh kem trái cây, hộp tart mix vị — đặt trước cho sinh nhật và những dịp đặc biệt.", cta: "Chọn hộp quà", href: "/thuc-don", item: "Hộp tart 4 vị", price: priceOf(products, "hop-tart-4-vi"), note: "Tiệm xác nhận" },
     { img: "/images/hero/tiramisu-red-desktop.jpg", imgMobile: "/images/hero/tiramisu-red-mobile.jpg", pos: "center 60%", posMobile: "center 62%", alt: "Lát tiramisu nhiều lớp, bột cacao rơi trên nền rèm đỏ", headline: "Đặt trước,\nhẹn giờ,\nghé lấy.", sub: "Chọn bánh online, hẹn khung giờ nhận — tiệm gọi xác nhận rồi mới chuẩn bị.", cta: "Đặt bánh ngay", href: "/thuc-don", item: "Hẹn giờ nhận", note: "Tiệm gọi xác nhận" },
   ];
 
@@ -51,7 +53,6 @@ export default async function HomePage() {
   const best = bySlugs(["banh-kem-dau", "cheesecake-viet-quat", "tart-trai-cay", "tart-kem-mua"]);
   const pairs = bySlugs(["combo-croissant-cacao", "combo-banh-cuon-latte", "combo-pancake-americano"]);
   const pairDrink: Record<string, string> = { "combo-croissant-cacao": "cacao nóng", "combo-banh-cuon-latte": "latte đá", "combo-pancake-americano": "americano đá" };
-  const secrets = bySlugs(["croissant-bo", "croissant-so-co-la"]);
 
   return (
     <>
@@ -92,55 +93,8 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* BÍ QUYẾT */}
-      <section id="cau-chuyen" className="bg-beige">
-        <div className="mx-auto flex max-w-[1200px] flex-wrap items-center gap-12 px-6 py-20 md:gap-[72px] md:py-[104px]">
-          <div className="relative aspect-[4/5] min-w-0 flex-[1_1_440px] overflow-hidden rounded-[28px] shadow-[0_24px_48px_rgba(59,15,18,0.12)]">
-            <Image src={productImages.crossSection} alt="Bốn lát croissant cắt đôi xếp chồng: bơ, kem hạnh nhân, phô mai mâm xôi và sô-cô-la" fill sizes="(min-width: 1024px) 560px, 100vw" className="object-cover" style={{ objectPosition: "center 45%" }} />
-          </div>
-          <div className="flex min-w-0 flex-[1_1_400px] flex-col gap-[22px]">
-            <h2 className={h2Cls}>Bí quyết nằm trong từng lớp bơ</h2>
-            <p className="m-0 text-[17px] text-muted">Cắt đôi một chiếc croissant của The Yub, bạn sẽ thấy rõ từng lớp bột mỏng xếp chồng — kết quả của việc cán và gấp bột cùng bơ nhiều lần. Vỏ ngoài giòn rụm, ruột bên trong rỗng nhẹ và thơm bơ.</p>
-            <ol className="m-0 mt-1 flex list-none flex-col border-t border-maroon/20 p-0">
-              {[
-                ["Bơ nguyên bản", secrets[0] ? formatVnd(secrets[0].priceVnd) : ""],
-                ["Kem hạnh nhân", priceOf(products, "croissant-hanh-nhan")],
-                ["Phô mai mâm xôi", priceOf(products, "croissant-mam-xoi")],
-                ["Sô-cô-la chảy", secrets[1] ? formatVnd(secrets[1].priceVnd) : ""],
-              ].map(([name, price], i) => (
-                <li key={name} className="flex items-baseline gap-4 border-b border-maroon/20 py-3">
-                  <span className="w-7 flex-none font-display text-[15px] font-semibold text-accent">{String(i + 1).padStart(2, "0")}</span>
-                  <span className="flex-1 font-semibold">{name}</span>
-                  <span className="text-sm text-muted">{price}</span>
-                </li>
-              ))}
-            </ol>
-            <p className="m-0 text-[15px] text-muted">Mẻ chiều ra lò lúc {store.freshBatchTime} — đặt trước để phần bánh của bạn được để riêng.</p>
-            <Link href="/ghe-tiem" className={`${linkCaps} self-start text-sm`}>Ghé tiệm & giờ nhận bánh <ArrowRightIcon /></Link>
-          </div>
-        </div>
-      </section>
-
-      {/* GIÁ TRỊ */}
-      <section className="mx-auto flex max-w-[1100px] flex-col items-center gap-14 px-6 py-20 text-center md:py-[104px]">
-        <h2 className={h2SmCls}>Đơn giản. Tử tế. Mỗi ngày.</h2>
-        <div className="grid w-full grid-cols-1 gap-10 md:grid-cols-3">
-          {[
-            { title: "Ra lò mỗi chiều", text: `Mẻ bánh mới lúc ${store.freshBatchTime}. Đặt trước để giữ phần cho mình.`, icon: <><path d="M10 46c0-10 10-16 22-16s22 6 22 16c0 3-2 5-5 5H15c-3 0-5-2-5-5z" /><path d="M24 30c2 4 2 8 0 12M32 30c2 4 2 8 0 12M40 30c2 4 2 8 0 12" /><path d="M26 22c-2-3 2-5 0-9M33 22c-2-3 2-5 0-9M40 22c-2-3 2-5 0-9" /></> },
-            { title: "Mẻ nhỏ, làm tay", text: "Từng mẻ bột được cán, gấp và tạo hình trong bếp của tiệm.", icon: <><path d="M32 58V12" /><path d="M32 20c-6-2-9-7-8-12 6 1 9 6 8 12zM32 20c6-2 9-7 8-12-6 1-9 6-8 12zM32 32c-6-2-9-7-8-12 6 1 9 6 8 12zM32 32c6-2 9-7 8-12-6 1-9 6-8 12zM32 44c-6-2-9-7-8-12 6 1 9 6 8 12zM32 44c6-2 9-7 8-12-6 1-9 6-8 12z" /></> },
-            { title: "Hẹn giờ, ghé lấy", text: "Chọn khung giờ nhận online, tiệm gọi xác nhận rồi mới chuẩn bị.", icon: <><circle cx="32" cy="34" r="22" /><path d="M32 20v14l9 6" /><path d="M26 6h12M32 6v6" /></> },
-          ].map((v) => (
-            <div key={v.title} className="flex flex-col items-center gap-3">
-              <svg width="64" height="64" viewBox="0 0 64 64" fill="none" stroke="#3B0F12" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{v.icon}</svg>
-              <h3 className="m-0 text-base font-bold">{v.title}</h3>
-              <p className="m-0 max-w-[260px] text-[15px] text-muted-2">{v.text}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
       {/* BÁN CHẠY */}
-      <section className="mx-auto flex max-w-[1200px] flex-col gap-3 px-5 pb-20 pt-14 md:gap-10 md:px-6 md:pb-[152px] md:pt-6">
+      <section className="mx-auto flex max-w-[1200px] flex-col gap-3 px-5 pb-6 pt-2 md:gap-10 md:px-6 md:pb-8 md:pt-0">
         <RuledHeading className={`${h2Cls} max-md:text-[32px]`}>Bán chạy</RuledHeading>
         <ol className="m-0 flex list-none flex-col p-0 md:hidden">
           {best.map((p, i) => (
@@ -182,11 +136,8 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* TỪ LÒ NƯỚNG ĐẾN HỘP QUÀ */}
-      <OvenToGift />
-
       {/* QUẦY NƯỚC */}
-      <section id="do-uong" className="mx-auto flex max-w-[1200px] flex-col gap-5 px-4 pb-14 pt-10 md:gap-16 md:px-6 md:pb-10 md:pt-32">
+      <section id="do-uong" className="mx-auto flex max-w-[1200px] flex-col gap-5 px-4 pb-12 pt-8 md:gap-12 md:px-6 md:pb-16 md:pt-12">
         {/* mobile: ảnh tràn viền + thẻ tiêu đề đè lên + thẻ menu sáng */}
         <div className="-mx-4 flex flex-col md:hidden">
           <div className="relative h-[300px]">
@@ -203,12 +154,13 @@ export default async function HomePage() {
           <h2 className={`${h2Cls} min-w-0 flex-[1_1_460px]`}>Thơm bơ, đậm vị cà phê</h2>
           <p className="m-0 min-w-0 flex-[1_1_340px] text-[17px] text-muted-2">Bánh ngon cần một ly nước hợp vị. Quầy nước của The Yub có cà phê, trà trái cây và đồ uống không cà phê — pha khi bạn tới, uống tại tiệm hoặc mang đi.</p>
         </div>
-        <div className="hidden flex-wrap items-stretch gap-10 md:flex">
+        <div className="hidden flex-wrap items-stretch gap-10 md:flex lg:hidden">
           <div className="relative min-h-[420px] min-w-0 flex-[1_1_360px] overflow-hidden rounded-[240px_240px_28px_28px] md:min-h-[580px]">
             <Image src={productImages.croissantCoffee} alt="Ly cà phê bên khay croissant nhiều vị" fill sizes="(min-width: 1024px) 480px, 100vw" className="object-cover" style={{ objectPosition: "center 20%" }} />
           </div>
           <DrinkBoard drinks={drinks} groups={drinkCats} />
         </div>
+        <DesktopDrinkShowcase drinks={drinks} groups={drinkCats} />
 
         {/* Cặp đôi */}
         <div id="cap-doi" className="mt-6 flex scroll-mt-16 flex-col gap-4 md:mt-0 md:gap-7">
@@ -245,6 +197,11 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* TỪ LÒ NƯỚNG ĐẾN HỘP QUÀ — giữ đích liên kết câu chuyện */}
+      <div id="cau-chuyen" className="scroll-mt-20">
+        <OvenToGift />
+      </div>
 
       {/* ĐẶT BÁNH THEO GIỜ HẸN */}
       <section id="dat-banh" className="mx-auto flex max-w-[1200px] scroll-mt-16 flex-col items-center gap-5 px-4 pb-14 pt-10 md:gap-12 md:px-6 md:py-[120px]">
